@@ -69,7 +69,7 @@ PHASE 5  Docs              README + HARDENING
 
 ### Checkpoint (gating milestone, blocks Phase 2)
 
-- [x] T014 CHECKPOINT: unset `VOICE_BASE_URL` and `VOICE_TOKEN`, run `pytest -q`, and confirm the two headline tests in `tests/test_gate.py` are green. DONE. Two headline tests green, 36 tests total pass.
+- [x] T014 CHECKPOINT: unset `VOICE_BASE_URL` and `VOICE_TOKEN`, run `pytest -q`, and confirm the two headline tests in `tests/test_gate.py` are green. DONE. Two headline tests green, 44 tests total pass.
 
 ---
 
@@ -139,7 +139,7 @@ That critique is correct about the DEMO, not the architecture. The
 personalization is real but currently quiet and off-screen. This phase makes it
 visible and gives the orchestrator agentic behavior. This is the highest-value
 remaining work for the demo (50%) and creativity (10%) axes. Everything above is
-built and tested (36 tests green, live LoRA voice working). Start here.
+built and tested (44 tests green, live LoRA voice working). Start here.
 
 ### The gap, stated plainly
 
