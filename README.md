@@ -121,15 +121,92 @@ approved, then the attack refused. Click a lane to fire its request, or type you
 own attack into the red-team box. Flip **deterministic gate only** to unplug the
 model and watch the refusals still fire.
 
-## Run the OpenClaw agent
+## Configure the OpenClaw agent
+
+The boss runs as a real OpenClaw agent that calls the gate as an MCP tool.
+
+**1. Install OpenClaw and the MCP SDK.**
 
 ```bash
-pip install mcp
-openclaw mcp add governance-gate \
-  --command "$PWD/.venv/bin/python" --arg -m --arg orchestrator.mcp_gate --cwd "$PWD"
-python -m orchestrator.openclaw_orchestrator drain   # finance budget drain (deny)
-python -m orchestrator.openclaw_orchestrator legit   # normal invoice (allow)
+npm install -g openclaw
+source .venv/bin/activate && pip install mcp
 ```
+
+**2. Give OpenClaw a model provider** (the agent's reasoning brain — any
+OpenClaw-supported provider works; this build used OpenAI).
+
+```bash
+export OPENAI_API_KEY="sk-..."
+openclaw models            # the provider should show status=usable
+```
+
+**3. Register the deterministic gate as an MCP tool.** Pass the served founder
+LoRA endpoint as env so the tool can run the model judge and speak in the founder
+voice. (OpenClaw spawns this stdio server per turn and only it gets these vars.)
+
+```bash
+openclaw mcp add governance-gate \
+  --command "$PWD/.venv/bin/python" --arg -m --arg orchestrator.mcp_gate \
+  --cwd "$PWD" \
+  --env VOICE_BASE_URL="https://<your-litng-subdomain>.cloudspaces.litng.ai/v1" \
+  --env VOICE_TOKEN="<bearer-or-anything-if-open>"
+
+openclaw mcp probe governance-gate     # should report: governance-gate: 1 tools
+```
+
+**4. Run a governed agent turn.**
+
+```bash
+python -m orchestrator.openclaw_orchestrator drain   # finance budget drain -> deny
+python -m orchestrator.openclaw_orchestrator legit   # normal invoice -> allow
+```
+
+The agent receives the request, calls `governance_gate`, obeys the two-judge
+verdict, and replies in the founder voice. It cannot be talked out of a refusal:
+the verdict is computed in code, not by the model.
+
+The console's live-agent path calls this same agent via `POST /agent`, so launch
+the server with the keys in its environment:
+
+```bash
+source .demo.env && uvicorn orchestrator.server:app --port 8080
+```
+
+## Secrets (local, gitignored)
+
+Keys live only in a gitignored `.demo.env`, never in the repo:
+
+```bash
+# .demo.env
+export OPENAI_API_KEY="sk-..."                                   # OpenClaw agent brain
+export VOICE_BASE_URL="https://<subdomain>.cloudspaces.litng.ai/v1"  # served LoRA
+export VOICE_TOKEN="<bearer-or-anything-if-open>"
+```
+
+`source .demo.env` before running the server or the agent.
+
+## Train and serve the founder LoRA (Lightning)
+
+On a Lightning Studio with a GPU:
+
+```bash
+pip install 'litgpt[all]' litserve
+litgpt download Qwen/Qwen2.5-3B-Instruct
+litgpt finetune_lora Qwen/Qwen2.5-3B-Instruct \
+  --data JSON --data.json_path "Seed /founder_orchestrator_lora.json" \
+  --data.val_split_fraction 0.05 --train.epochs 4 \
+  --lora_r 16 --lora_alpha 32 --out_dir out/founder-qwen-lora
+litgpt merge_lora out/founder-qwen-lora/final
+python "Seed /score_model.py" --model out/founder-qwen-lora/final   # held-out eval
+
+export FOUNDER_LORA_DIR=out/founder-qwen-lora/final
+export VOICE_BEARER="<random>"
+python orchestrator/serve_voice.py        # OpenAI-compatible /v1 on port 8000
+```
+
+Expose port 8000 and use its public URL as `VOICE_BASE_URL` (with `/v1`). The same
+endpoint backs the voice and the model judge, so a better model upgrades both.
+(Note: the data folder is literally named `Seed ` with a trailing space.)
 
 ## Results
 
