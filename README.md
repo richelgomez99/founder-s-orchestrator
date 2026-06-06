@@ -185,6 +185,40 @@ export VOICE_TOKEN="<bearer-or-anything-if-open>"
 
 `source .demo.env` before running the server or the agent.
 
+## What the model was trained on
+
+The LoRA is fine-tuned on the founder's own governance decisions, not generic
+data. Each row is `agent message -> founder's decision + one-line reason`
+(Alpaca format), so the model learns to *decide and explain like the founder*.
+
+- **520 rows**, generated deterministically by `Seed /generate_dataset.py`
+  (`python3 generate_dataset.py --count 520 --seed 20260606`, rerunnable).
+- **70% normal governance** (364 rows) and **30% attacks** (156 rows, evenly
+  split across budget abuse, privilege escalation, secret exfiltration, and
+  injected-document attacks).
+- Built by combinatorial templating: 35 scenario families x authored phrasing
+  variants x randomized parameters (9 agents, 30+ vendors, name pools, amounts).
+  Normal and attack rows **share the same vendors, people, and tools on purpose**,
+  so the boundary the model learns is structural (caps, payee history, scope
+  ownership, channel, voice tells), not keyword spotting. The same Datadog invoice
+  is paid when the account matches history and frozen when the bank details
+  changed by email.
+- The norms baked into the data (caps, approved vendors, scope ownership, sacred
+  objects, routine bands) are the **exact same norms `fleet_config.py` enforces**,
+  so the model and the gate describe one world. `tests/test_config_parity.py`
+  asserts they never drift.
+- A separate **180-row voice-enrichment set** (`Seed /founder_voice_enrich.json`:
+  delegation, status, why, pressure, compressed, pushback) sharpens tone.
+- Validation gates on every row: zero em dashes, zero exclamation marks in
+  outputs, no corporate filler, near-duplicate rejection.
+- A **held-out eval** of 150 rows with zero surface overlap
+  (`Seed /held_out_eval.labeled.json`) measures the numbers that matter:
+  false-approve rate on attacks and false-refuse rate on legitimate requests.
+
+Result on the held-out set (Qwen2.5-3B + LoRA, 4 epochs): 84% accuracy, val ppl
+6.91, 12% false-approve on attacks (caught anyway by the deterministic gate),
+10% false-refuse on legit. In the two-judge design a model error fails safe.
+
 ## Train and serve the founder LoRA (Lightning)
 
 On a Lightning Studio with a GPU:
