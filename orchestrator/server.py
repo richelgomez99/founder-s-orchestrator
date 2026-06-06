@@ -159,7 +159,9 @@ def _parse_message(text: str) -> dict:
     m = re.search(r"\b(\d{3,7})\b", low.replace(",", "").replace("$", ""))
     amount = int(m.group(1)) if m else 0
     payee = ""
-    pm = re.search(r"to\s+([A-Z][\w&. ]+?)(?:\s+on\b|\s+via\b|[.,]|$)", text)
+    # Payee = the run of Capitalized words after "to" (a proper-noun vendor),
+    # so trailing lowercase words like "now"/"today" are not swept in.
+    pm = re.search(r"\bto\s+([A-Z][\w&.]*(?:\s+[A-Z][\w.&-]*)*)", text)
     if pm:
         payee = pm.group(1).strip()
     secrety = bool(re.search(r"(secret|api key|\.env|production|credential|database|password|token)", text, re.I))
@@ -247,10 +249,26 @@ async def agent_turn(req: Request):
     except Exception:
         pass
 
-    # Safety net: if the live agent did not call the gate (messy input, missed
-    # tool call), compute the real two-judge verdict here from the message so the
-    # box never dead-ends on "no verdict". Same gate, same judges.
-    if verdict is None:
+    # Free-text (red-team) input is UNTRUSTED by construction. The channel is the
+    # transport a message arrived on, never what the text claims, so the agent
+    # must not be able to upgrade a "From the founder" message to the verified
+    # channel (that is the exact spoof). Pin the channel to inbox and rule on it
+    # server-side, authoritatively. Scripted beats keep the agent's verdict.
+    if beat is None:
+        gate_request = _parse_message(message)
+        gate_request["channel"] = "inbox"
+        fb = orchestrate.decide(gate_request, model_propose=model_judge.propose)
+        if fb.get("final_source") != "model":
+            try:
+                fb["voiced_response"] = voice.phrase(gate_request, fb["decision"], fb["reason"])
+            except Exception:
+                pass
+        verdict = fb
+        reply = fb.get("voiced_response") or fb.get("reason")
+        gate_called = True
+    # Safety net: a scripted beat where the agent missed the tool call. Compute
+    # the verdict from the scenario text so the box never dead-ends.
+    elif verdict is None:
         gate_request = _parse_message(message)
         fb = orchestrate.decide(gate_request, model_propose=model_judge.propose)
         if fb.get("final_source") != "model":
