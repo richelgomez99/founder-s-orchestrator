@@ -22,3 +22,9 @@ node_modules/
 
 # Chat history logs (may contain secrets)
 .waylog/
+
+# Editor / agent local config and chat exports
+.claude/
+.cursor/
+.cursor-chat-export/
+copilot-sessions.md
