@@ -58,6 +58,29 @@
   }
   .profilebtn:hover { background: rgba(219,97,221,.18); }
 
+  /* ---- Landing hero ---- */
+  .hero {
+    border-bottom: 1px solid var(--line); padding: 74px 24px 58px;
+    background:
+      radial-gradient(900px 420px at 18% -10%, rgba(219,97,221,.08), transparent),
+      radial-gradient(760px 420px at 92% 10%, rgba(88,166,255,.06), transparent);
+  }
+  .hero-inner { max-width: 1100px; margin: 0 auto; }
+  .hero-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--anom); margin-bottom: 18px; }
+  .hero-h1 { font-family: var(--display); font-size: 52px; line-height: 1.04; font-weight: 700; letter-spacing: -1.6px; margin: 0 0 20px; max-width: 780px; }
+  .hero-h1 .accent { color: var(--anom); }
+  .hero-sub { font-size: 17px; line-height: 1.6; color: var(--dim); max-width: 660px; margin: 0 0 28px; }
+  .hero-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-family: var(--mono); font-size: 12px; color: var(--dim); }
+  .hero-flow .n { padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .hero-flow .n.model { color: var(--model); border-color: rgba(219,97,221,.4); }
+  .hero-flow .n.gate { color: var(--gate); border-color: rgba(88,166,255,.4); }
+  .hero-flow .n.final { color: var(--ink); border-color: var(--line2); background: var(--panel); }
+  .hero-flow .plus, .hero-flow .arr { color: var(--mute); }
+  .hero-cue { margin-top: 36px; font-family: var(--mono); font-size: 12px; color: var(--mute); }
+  .hero-cue .ar { display: inline-block; animation: bob 1.8s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+  @media (max-width: 700px) { .hero-h1 { font-size: 34px; letter-spacing: -1px; } }
+
   /* ---- Thesis strip ---- */
   .thesis {
     display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
@@ -318,16 +341,21 @@
     <div class="pill">evaluated <b id="evalCount">0</b></div>
   </div>
 
-  <div class="thesis">
-    <div class="big">An agent that knows you can't be turned against you.</div>
-    <div class="flow">
-      <span class="n model">your instinct</span>
-      <span class="arrow">+</span>
-      <span class="n gate">your rules</span>
-      <span class="arrow">&rarr;</span>
-      <span class="n final">defers to the more cautious</span>
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-eyebrow">OpenClaw &times; Lightning AI</div>
+      <h1 class="hero-h1">The boss your AI agents <span class="accent">answer to.</span></h1>
+      <p class="hero-sub">Autonomous AI agents can spend money, email outsiders, and touch secrets, and any of them can be tricked into acting against you. This is the trusted gate every one of them must clear before an irreversible action. It is built from your own judgment, so it approves your real work and can't be talked out of a refusal.</p>
+      <div class="hero-flow">
+        <span class="n model">your instinct</span>
+        <span class="plus">+</span>
+        <span class="n gate">your rules</span>
+        <span class="arr">&rarr;</span>
+        <span class="n final">it defers to whichever is more cautious</span>
+      </div>
+      <div class="hero-cue"><span class="ar">&darr;</span>&nbsp;&nbsp;try it live below</div>
     </div>
-  </div>
+  </section>
 
   <div class="grid">
     <!-- FLEET -->
