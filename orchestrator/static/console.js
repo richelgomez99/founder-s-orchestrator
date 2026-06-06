@@ -185,7 +185,7 @@ function renderMeter(resp) {
   const s = Number(pc.score);
   meterFillEl.style.width = Math.round(s * 100) + "%";
   meterValEl.textContent = s.toFixed(2);
-  meterSrcEl.textContent = pc.source === "learned" ? "learned LoRA" : "structural";
+  meterSrcEl.textContent = pc.source === "learned" ? "from your model" : "";
   meterEl.classList.toggle("crossed", !!pc.crossed);
   meterCapEl.textContent = pc.crossed ? "above the founder's normal band. only adds caution." : "within the founder's normal pattern.";
 }
@@ -202,8 +202,8 @@ function showFinal(resp, replyOverride) {
   renderMeter(resp);
   // Who set the final verdict, reinforcing the two-judge story.
   const src = resp.final_source;
-  if (src === "model") finalSrcEl.innerHTML = '<span class="model">set by the model &middot; stricter</span>';
-  else if (src === "gate") finalSrcEl.innerHTML = '<span class="gate">set by the gate &middot; stricter</span>';
+  if (src === "model") finalSrcEl.innerHTML = '<span class="model">your instinct was the more cautious judge</span>';
+  else if (src === "gate") finalSrcEl.innerHTML = '<span class="gate">your rules were the more cautious judge</span>';
   else if (src === "agree") finalSrcEl.innerHTML = '<span class="agree">both judges agreed</span>';
   else finalSrcEl.textContent = "";
 }
@@ -255,7 +255,7 @@ async function fireInstant(req, isAttack, kind) {
 }
 
 // ---- Live agent work ticker ----------------------------------------------
-const LIVE_STEPS = ["agent received the request", "recalling the founder norms it learned", "asking the trained model for its verdict", "calling governance_gate (deterministic)", "taking the stricter of the two"];
+const LIVE_STEPS = ["the agent received the request", "recalling what it learned about you", "asking your instinct (the model)", "checking your rules (the gate)", "going with the more careful answer"];
 let workTimer = null;
 function renderWork(idx, toolCall) {
   let html = LIVE_STEPS.map((s, i) => {
@@ -316,7 +316,7 @@ async function fireLive(scenario, req, isAttack, kind) {
   showFinal(resp);
 
   const secs = data.duration_ms ? (data.duration_ms / 1000).toFixed(1) + "s" : "";
-  agentLineEl.innerHTML = `<span class="live">live agent</span> &middot; ${data.model || "openclaw"} &middot; <span class="tool">called governance_gate</span> (${data.tool_calls} call${data.tool_calls === 1 ? "" : "s"})${secs ? " &middot; " + secs : ""}`;
+  agentLineEl.innerHTML = `<span class="live">real agent</span> &middot; it asked the gate for permission (${data.tool_calls} tool call${data.tool_calls === 1 ? "" : "s"})${secs ? " &middot; " + secs : ""}`;
 
   pulseTile(req.agent, resp.decision);
   pushAudit(req, resp);

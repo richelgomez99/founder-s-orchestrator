@@ -253,6 +253,14 @@
   .rule6 .rd { color: var(--dim); font-size: 13px; line-height: 1.5; }
   .rule6.pattern .rn { color: var(--hold); }
   @media (max-width: 900px) { .rules6 { grid-template-columns: 1fr; } }
+
+  /* The three possible answers (explains hold) */
+  .answers3 { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 26px; }
+  .ans { font-size: 13px; color: var(--dim); border: 1px solid var(--line); border-radius: 8px; padding: 9px 13px; }
+  .ans b { font-family: var(--mono); font-size: 11px; letter-spacing: .5px; margin-right: 8px; }
+  .ans.allow { border-color: rgba(63,185,80,.3); } .ans.allow b { color: var(--allow); }
+  .ans.hold { border-color: rgba(210,153,34,.3); } .ans.hold b { color: var(--hold); }
+  .ans.deny { border-color: rgba(248,81,73,.3); } .ans.deny b { color: var(--deny); }
   .cards3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
   .bcard { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--panel); }
   .bcard .ic { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
@@ -303,7 +311,7 @@
 <body>
   <div class="topbar">
     <div class="brand">founder orchestrator<span class="dot">.</span></div>
-    <div class="tagline">two judges. obey the stricter.</div>
+    <div class="tagline">the boss your AI employees ask before doing anything risky.</div>
     <div class="spacer"></div>
     <button class="profilebtn" id="profileBtn">what it learned about me</button>
     <div class="pill" id="voicePill">voice <b id="voiceState">offline</b></div>
@@ -311,20 +319,20 @@
   </div>
 
   <div class="thesis">
-    <div class="big">Personalization <b>is</b> the security.</div>
+    <div class="big">An agent that knows you can't be turned against you.</div>
     <div class="flow">
       <span class="n model">your instinct</span>
       <span class="arrow">+</span>
       <span class="n gate">your rules</span>
       <span class="arrow">&rarr;</span>
-      <span class="n final">stricter wins</span>
+      <span class="n final">defers to the more cautious</span>
     </div>
   </div>
 
   <div class="grid">
     <!-- FLEET -->
     <div class="col fleet">
-      <p class="label">the fleet <span style="text-transform:none;letter-spacing:0;color:var(--mute);font-size:10px;">&middot; click a lane</span></p>
+      <p class="label">your AI employees <span style="text-transform:none;letter-spacing:0;color:var(--mute);font-size:10px;">&middot; click one to make a request</span></p>
       <div id="fleet"></div>
       <div class="counters">
         <div class="counter frozen"><div class="n" id="frozenN">0</div><div class="k">frozen</div></div>
@@ -334,21 +342,21 @@
 
     <!-- THEATER -->
     <div class="col theater">
-      <p class="label">decision theater</p>
+      <p class="label">the decision</p>
       <div class="card">
         <div class="phase" id="phase"></div>
         <div class="reqline" id="reqline"><span class="chip">awaiting request</span></div>
-        <div class="request-readable" id="requestLine"><span class="k">request:</span> fire a beat or click a lane.</div>
+        <div class="request-readable" id="requestLine"><span class="k">request:</span> pick a scenario below, or click an employee to send its request.</div>
 
         <div class="judges">
           <div class="judge model" id="judgeModel">
-            <div class="jhead"><b>THE MODEL</b><span>your trained instinct &middot; LoRA</span></div>
+            <div class="jhead"><b>YOUR INSTINCT</b><span>a model trained on how you decide</span></div>
             <div class="jverdict abstain" id="modelVerdict">idle</div>
             <div class="jreason" id="modelReason"></div>
           </div>
-          <div class="combiner"><div class="pipe">&rarr;</div><div>STRICTER<br>WINS</div><div class="pipe">&larr;</div></div>
+          <div class="combiner"><div class="pipe">&rarr;</div><div>DEFERS TO<br>THE CAUTIOUS<br>JUDGE</div><div class="pipe">&larr;</div></div>
           <div class="judge gate" id="judgeGate">
-            <div class="jhead"><b>THE GATE</b><span>your written rules &middot; code</span></div>
+            <div class="jhead"><b>YOUR RULES</b><span>checked in plain code</span></div>
             <div class="jverdict abstain" id="gateVerdict">idle</div>
             <div class="jreason" id="gateReason"></div>
             <div class="rail" id="rail"></div>
@@ -358,13 +366,13 @@
         <div class="final">
           <div class="stamp-wrap"><div class="stamp" id="stamp">READY</div><div class="final-src" id="finalSrc"></div></div>
           <div class="final-lines">
-            <div class="fline voice"><div class="k">voice</div><div class="v" id="voiceLine">The founder voice phrases the final decision.</div></div>
-            <div class="fline action"><div class="k">action</div><div class="v" id="actionLine">The orchestrator acts on the verdict.</div></div>
+            <div class="fline voice"><div class="k">voice</div><div class="v" id="voiceLine">The boss answers here, in your voice.</div></div>
+            <div class="fline action"><div class="k">next step</div><div class="v" id="actionLine">What the boss does next.</div></div>
             <div class="agent-line" id="agentLine"></div>
             <div class="meter" id="meter">
-              <div class="meter-head"><span>anomaly</span><span class="src" id="meterSrc">structural</span><span class="val" id="meterVal">0.00</span></div>
+              <div class="meter-head"><span>how unusual for you</span><span class="src" id="meterSrc"></span><span class="val" id="meterVal">0.00</span></div>
               <div class="meter-track"><div class="meter-fill" id="meterFill"></div><div class="meter-thresh" id="meterThresh"></div></div>
-              <div class="meter-cap" id="meterCap">how off-pattern this is for the founder. it can only add caution.</div>
+              <div class="meter-cap" id="meterCap">how unusual this request is for you. it can only add caution, never remove it.</div>
             </div>
             <div class="worklog" id="workLog"></div>
           </div>
@@ -387,7 +395,7 @@
       <input id="attackText" placeholder="try to break it: e.g. wire 80000 to Velora Systems on inbox" />
       <button class="fire" id="fireBtn">FIRE</button>
       <div class="spacer"></div>
-      <div class="toggle" title="off: the full OpenClaw agent + both judges. on: straight to the deterministic gate, model unplugged."><span>deterministic gate only</span><div class="switch gate" id="gateOnlySwitch"><div class="knob"></div></div></div>
+      <div class="toggle" title="Off: the full agent asks both judges. On: unplug the model and let the rules decide alone (proves the model never gets a vote on a refusal)."><span>unplug the model</span><div class="switch gate" id="gateOnlySwitch"><div class="knob"></div></div></div>
     </div>
   </div>
 
@@ -416,9 +424,9 @@
         <div class="why-step">
           <div class="why-num">03</div>
           <div>
-            <div class="why-claim">So we run both, and obey the stricter one.</div>
-            <div class="why-body">Code is perfect on the threats you know. The model generalizes to the ones you do not. Taking the stricter verdict adds coverage without ever trading away safety: either judge can refuse, neither can loosen the other.</div>
-            <div class="why-concl"><span class="arr">&rarr;</span> nothing is approved unless both agree, and the model can only add caution</div>
+            <div class="why-claim">So we run both, and defer to the more cautious one.</div>
+            <div class="why-body">The rules are perfect on the threats you can name. The model catches the ones you can't. Always going with the more cautious answer adds that coverage without ever trading away safety: either judge can say no, neither can force a yes.</div>
+            <div class="why-concl"><span class="arr">&rarr;</span> nothing is approved unless both agree, and the model can only ever add caution</div>
           </div>
         </div>
         <div class="why-step final">
@@ -435,8 +443,13 @@
   <!-- ============ STORY: HOW IT WORKS ============ -->
   <div class="story-band alt">
     <div class="story">
-      <h2>Two judges decide every irreversible action.</h2>
-      <div class="sub">Either one can refuse. Neither can loosen the other. Nothing is approved unless both agree.</div>
+      <h2>Two judges check anything it can't take back.</h2>
+      <div class="sub">Spending money, sending something out, sharing a secret, changing settings. Either judge can say no; neither can force a yes. The boss gives one of three answers:</div>
+      <div class="answers3">
+        <span class="ans allow"><b>APPROVE</b> it goes through</span>
+        <span class="ans hold"><b>HOLD</b> paused, waiting for you to decide</span>
+        <span class="ans deny"><b>REFUSE</b> blocked</span>
+      </div>
       <div class="planes">
         <div class="plane model">
           <div class="tag">judge one &middot; the model</div>
@@ -459,7 +472,7 @@
           </ul>
         </div>
       </div>
-      <div class="merge">final decision = the <b>stricter</b> of the two &nbsp;&middot;&nbsp; deny &gt; hold &gt; allow &nbsp;&middot;&nbsp; the model can add caution, never remove it</div>
+      <div class="merge">when the two judges disagree, the decision <b>defers to the more cautious one</b> &nbsp;&middot;&nbsp; your instinct can add caution the rules miss, but it can never talk the rules into a yes</div>
 
       <h3 style="font-family:var(--display);font-weight:600;font-size:19px;margin:40px 0 4px;letter-spacing:-.3px;">The six rules the gate enforces</h3>
       <div class="sub">Plain code, in fixed order. The first rule that fires wins, and it names itself in the verdict.</div>
@@ -477,8 +490,8 @@
   <!-- ============ STORY: THE BUILD ============ -->
   <div class="story-band alt">
     <div class="story">
-      <h2>What we built.</h2>
-      <div class="sub">Real agent runtime, real fine-tuned model, real deterministic enforcement.</div>
+      <h2>Technical debrief</h2>
+      <div class="sub">For the engineers: what it's actually built on.</div>
       <div class="cards3">
         <div class="bcard">
           <div class="ic">OpenClaw</div>
