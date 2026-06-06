@@ -21,10 +21,10 @@
     --allow: #3fb950;
     --deny: #f85149;
     --hold: #d29922;
-    --anom: #db61dd;
+    --anom: #2dd4bf;
     --accent: #58a6ff;
     --gate: #58a6ff;
-    --model: #db61dd;
+    --model: #2dd4bf;
     --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -53,16 +53,16 @@
   .pill b { color: var(--ink); font-weight: 600; }
   .profilebtn {
     font-family: var(--mono); font-size: 11px; cursor: pointer; color: var(--anom);
-    background: rgba(219,97,221,.08); border: 1px solid rgba(219,97,221,.4);
+    background: rgba(45,212,191,.08); border: 1px solid rgba(45,212,191,.4);
     border-radius: 999px; padding: 4px 12px; transition: all .15s;
   }
-  .profilebtn:hover { background: rgba(219,97,221,.18); }
+  .profilebtn:hover { background: rgba(45,212,191,.18); }
 
   /* ---- Landing hero ---- */
   .hero {
     border-bottom: 1px solid var(--line); padding: 74px 24px 58px;
     background:
-      radial-gradient(900px 420px at 18% -10%, rgba(219,97,221,.08), transparent),
+      radial-gradient(900px 420px at 18% -10%, rgba(45,212,191,.08), transparent),
       radial-gradient(760px 420px at 92% 10%, rgba(88,166,255,.06), transparent);
   }
   .hero-inner { max-width: 1100px; margin: 0 auto; }
@@ -73,7 +73,7 @@
   .hero-sub b { color: var(--ink); font-weight: 600; }
   .hero-flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-family: var(--mono); font-size: 12px; color: var(--dim); }
   .hero-flow .n { padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; }
-  .hero-flow .n.model { color: var(--model); border-color: rgba(219,97,221,.4); }
+  .hero-flow .n.model { color: var(--model); border-color: rgba(45,212,191,.4); }
   .hero-flow .n.gate { color: var(--gate); border-color: rgba(88,166,255,.4); }
   .hero-flow .n.final { color: var(--ink); border-color: var(--line2); background: var(--panel); }
   .hero-flow .plus, .hero-flow .arr { color: var(--mute); }
@@ -92,7 +92,7 @@
   .thesis .big b { color: var(--anom); }
   .thesis .flow { display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11px; color: var(--dim); margin-left: auto; }
   .thesis .flow .n { padding: 3px 9px; border: 1px solid var(--line); border-radius: 6px; }
-  .thesis .flow .n.model { color: var(--model); border-color: rgba(219,97,221,.4); }
+  .thesis .flow .n.model { color: var(--model); border-color: rgba(45,212,191,.4); }
   .thesis .flow .n.gate { color: var(--gate); border-color: rgba(88,166,255,.4); }
   .thesis .flow .n.final { color: var(--ink); border-color: var(--line2); background: var(--panel); }
   .thesis .flow .arrow { color: var(--mute); }
@@ -133,7 +133,7 @@
   .phase { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 8px; opacity: 0; transition: opacity .2s; border: 1px solid var(--line); color: var(--mute); }
   .phase.show { opacity: 1; }
   .phase.legit { color: var(--allow); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
-  .phase.attack { color: var(--anom); border-color: rgba(219,97,221,.5); background: rgba(219,97,221,.1); }
+  .phase.attack { color: var(--anom); border-color: rgba(45,212,191,.5); background: rgba(45,212,191,.1); }
   .reqline { font-family: var(--mono); font-size: 12px; color: var(--dim); display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
   .chip { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-size: 11px; color: var(--ink); }
   .chip.agent { color: var(--accent); border-color: rgba(88,166,255,.4); }
@@ -147,7 +147,7 @@
   .judge .jhead { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
   .judge .jhead b { font-size: 12px; }
   .judge .jhead span { color: var(--mute); font-size: 9px; letter-spacing: .5px; }
-  .judge.model { border-color: rgba(219,97,221,.28); }
+  .judge.model { border-color: rgba(45,212,191,.28); }
   .judge.model .jhead b { color: var(--model); }
   .judge.gate { border-color: rgba(88,166,255,.28); }
   .judge.gate .jhead b { color: var(--gate); }
@@ -156,7 +156,7 @@
   .judge .jverdict.abstain { color: var(--mute); font-size: 13px; font-weight: 500; letter-spacing: 0; }
   .judge .jreason { font-size: 11px; color: var(--dim); margin-top: 6px; line-height: 1.4; font-family: var(--mono); }
   .judge.winner { box-shadow: 0 0 0 1px currentColor inset; }
-  .judge.model.winner { border-color: var(--model); box-shadow: 0 0 22px rgba(219,97,221,.16); }
+  .judge.model.winner { border-color: var(--model); box-shadow: 0 0 22px rgba(45,212,191,.16); }
   .judge.gate.winner { border-color: var(--gate); box-shadow: 0 0 22px rgba(88,166,255,.16); }
   .combiner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--mute); font-family: var(--mono); font-size: 8px; text-align: center; line-height: 1.2; }
   .combiner .pipe { font-size: 18px; color: var(--line2); }
@@ -244,7 +244,7 @@
   .story h2 { font-family: var(--display); font-size: 28px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.5px; }
   .story .sub { color: var(--dim); font-size: 14px; margin-bottom: 30px; }
   .story-band { border-top: 1px solid var(--line); }
-  .story-band.alt { background: linear-gradient(180deg, rgba(219,97,221,.03), transparent); }
+  .story-band.alt { background: linear-gradient(180deg, rgba(45,212,191,.03), transparent); }
 
   /* The "why" argument: four steps of reasoning building to the thesis */
   .why { display: flex; flex-direction: column; margin-top: 6px; }
@@ -261,7 +261,7 @@
   .planes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .plane { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); }
   .plane.gate { border-color: rgba(88,166,255,.25); }
-  .plane.model { border-color: rgba(219,97,221,.25); }
+  .plane.model { border-color: rgba(45,212,191,.25); }
   .plane .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
   .plane.gate .tag { color: var(--gate); } .plane.model .tag { color: var(--model); }
   .plane h3 { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 8px 0 10px; }
