@@ -404,18 +404,8 @@ function parseAttack(text) {
 }
 
 // ---- Toggles -------------------------------------------------------------
-// One control: full agent (default) vs deterministic gate only.
-const gateOnlyEl = document.getElementById("gateOnlySwitch");
-gateOnlyEl.onclick = () => {
-  if (busy) return;
-  const on = gateOnlyEl.classList.toggle("on");
-  liveOn = !on;   // gate-only -> instant deterministic path, no agent
-  modelOn = !on;  // gate-only -> model judge unplugged
-  disarm();
-  agentLineEl.innerHTML = on
-    ? '<span style="color:var(--mute)">deterministic gate only &middot; model unplugged, straight to code</span>'
-    : '<span class="live">full agent &middot; OpenClaw + your two judges</span>';
-};
+// Always the full agent: every request runs through the OpenClaw agent and both
+// judges. (No mode toggle; liveOn and modelOn stay true.)
 
 // Voice is always on (the founder LoRA backs both the voice and the model judge).
 fetch("/health").then((r) => r.json()).then((h) => {

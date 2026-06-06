@@ -394,8 +394,6 @@
     <div class="row attack">
       <input id="attackText" placeholder="try to break it: e.g. wire 80000 to Velora Systems on inbox" />
       <button class="fire" id="fireBtn">FIRE</button>
-      <div class="spacer"></div>
-      <div class="toggle" title="Off: the full agent asks both judges. On: unplug the model and let the rules decide alone (proves the model never gets a vote on a refusal)."><span>unplug the model</span><div class="switch gate" id="gateOnlySwitch"><div class="knob"></div></div></div>
     </div>
   </div>
 
@@ -502,8 +500,8 @@
         <div class="bcard">
           <div class="ic">Lightning AI</div>
           <h4>The model that knows you</h4>
-          <p>A model fine-tuned on Lightning on how this founder works. One model, three jobs: it speaks in the founder's voice, it is the second judge, and it is the sense of what looks normal for them.</p>
-          <div class="stat">one model, three jobs</div>
+          <p>A Qwen2.5-3B LoRA fine-tuned on Lightning Studios on 520 of the founder's own decisions: each an agent request mapped to the founder's allow / deny / hold and a one-line reason. One model, three jobs in the agent: the second judge, the voice, and the off-pattern sense.</p>
+          <div class="stat">val ppl 6.91 &middot; 84% held-out</div>
         </div>
         <div class="bcard">
           <div class="ic">Deterministic gate</div>
@@ -512,6 +510,16 @@
           <div class="stat">44 tests green</div>
         </div>
       </div>
+      <p style="color:var(--dim);font-size:14px;line-height:1.7;margin-top:28px;max-width:850px;">
+        <b style="color:var(--ink);font-family:var(--display);font-weight:600;">How the model is trained and used.</b>
+        The data is 520 rows of this founder's real governance decisions (the request in, the founder's
+        verdict and reason out) plus 180 voice-tone rows, generated against the exact caps, vendors, and
+        scopes the gate enforces, so the model and the rules describe one world. We LoRA fine-tune
+        Qwen2.5-3B on Lightning and serve the merged weights behind an OpenAI-compatible endpoint. It
+        powers the agent three ways: it forms its own verdict as the second judge, it phrases the final
+        decision in the founder's voice, and its token-likelihood is the "how unusual for you" signal.
+        Either judge can refuse; the model can only ever add caution, so a model mistake always fails safe.
+      </p>
     </div>
   </div>
 
