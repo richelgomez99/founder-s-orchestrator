@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Founder Orchestrator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #08090d;
+    --bg2: #0a0c10;
+    --panel: #11151c;
+    --panel2: #161b24;
+    --line: #232a36;
+    --line2: #2c3543;
+    --ink: #e9eef5;
+    --dim: #8b97a7;
+    --mute: #5c6675;
+    --allow: #3fb950;
+    --deny: #f85149;
+    --hold: #d29922;
+    --anom: #db61dd;
+    --accent: #58a6ff;
+    --gate: #58a6ff;
+    --model: #db61dd;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1400px 700px at 50% -15%, #11161f 0%, var(--bg) 55%), var(--bg);
+    color: var(--ink); font-family: var(--sans);
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
+  /* ---- Topbar ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    height: 50px; display: flex; align-items: center; gap: 14px;
+    padding: 0 18px; border-bottom: 1px solid var(--line);
+    background: rgba(8,9,13,0.86); backdrop-filter: blur(8px);
+  }
+  .brand { font-family: var(--display); font-weight: 600; letter-spacing: 0.2px; font-size: 15px; }
+  .brand .dot { color: var(--accent); }
+  .tagline { color: var(--mute); font-size: 12px; }
+  .topbar .spacer { flex: 1; }
+  .pill { font-family: var(--mono); font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; }
+  .pill b { color: var(--ink); font-weight: 600; }
+  .profilebtn {
+    font-family: var(--mono); font-size: 11px; cursor: pointer; color: var(--anom);
+    background: rgba(219,97,221,.08); border: 1px solid rgba(219,97,221,.4);
+    border-radius: 999px; padding: 4px 12px; transition: all .15s;
+  }
+  .profilebtn:hover { background: rgba(219,97,221,.18); }
+
+  /* ---- Thesis strip ---- */
+  .thesis {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    padding: 13px 22px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(88,166,255,.04), transparent);
+  }
+  .thesis .big { font-family: var(--display); font-size: 16px; font-weight: 600; letter-spacing: -.2px; }
+  .thesis .big b { color: var(--anom); }
+  .thesis .flow { display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11px; color: var(--dim); margin-left: auto; }
+  .thesis .flow .n { padding: 3px 9px; border: 1px solid var(--line); border-radius: 6px; }
+  .thesis .flow .n.model { color: var(--model); border-color: rgba(219,97,221,.4); }
+  .thesis .flow .n.gate { color: var(--gate); border-color: rgba(88,166,255,.4); }
+  .thesis .flow .n.final { color: var(--ink); border-color: var(--line2); background: var(--panel); }
+  .thesis .flow .arrow { color: var(--mute); }
+
+  /* ---- Console grid ---- */
+  .grid { display: grid; grid-template-columns: 234px 1fr 290px; min-height: calc(100vh - 50px - 50px - 150px); }
+  .col { overflow-y: auto; }
+  .col.fleet { border-right: 1px solid var(--line); padding: 14px 12px; }
+  .col.theater { padding: 16px 22px; }
+  .col.audit { border-left: 1px solid var(--line); padding: 14px 12px; }
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--mute); margin: 0 0 10px; }
+
+  /* ---- Fleet ---- */
+  .tile {
+    display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+    margin-bottom: 7px; transition: all .18s ease; cursor: pointer;
+  }
+  .tile:hover { border-color: var(--accent); transform: translateX(2px); }
+  .tile .lane { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); flex: none; }
+  .tile .name { font-size: 13px; font-weight: 500; }
+  .tile .status { font-size: 11px; color: var(--mute); margin-left: auto; font-family: var(--mono); }
+  .tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .tile.frozen { border-color: var(--deny); } .tile.frozen .lane { background: var(--deny); }
+  .tile.held { border-color: var(--hold); } .tile.held .lane { background: var(--hold); }
+  .tile.ok .lane { background: var(--allow); }
+  .badge { font-family: var(--mono); font-size: 9px; padding: 1px 5px; border-radius: 4px; margin-left: auto; }
+  .badge.frozen { background: rgba(248,81,73,.15); color: var(--deny); }
+  .badge.held { background: rgba(210,153,34,.15); color: var(--hold); }
+  .counters { margin-top: 14px; display: flex; gap: 8px; }
+  .counter { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px; text-align: center; background: var(--panel); }
+  .counter .n { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .counter .k { font-size: 9px; text-transform: uppercase; letter-spacing: .8px; color: var(--mute); }
+  .counter.frozen .n { color: var(--deny); }
+
+  /* ---- Theater ---- */
+  .card { border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--panel2), var(--panel)); padding: 18px 20px; }
+  .phase { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; display: inline-block; margin-bottom: 8px; opacity: 0; transition: opacity .2s; border: 1px solid var(--line); color: var(--mute); }
+  .phase.show { opacity: 1; }
+  .phase.legit { color: var(--allow); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
+  .phase.attack { color: var(--anom); border-color: rgba(219,97,221,.5); background: rgba(219,97,221,.1); }
+  .reqline { font-family: var(--mono); font-size: 12px; color: var(--dim); display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+  .chip { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-size: 11px; color: var(--ink); }
+  .chip.agent { color: var(--accent); border-color: rgba(88,166,255,.4); }
+  .chip.chan { color: var(--dim); }
+  .request-readable { font-family: var(--mono); font-size: 12px; color: var(--dim); margin-top: 8px; padding-bottom: 4px; }
+  .request-readable .k { color: var(--mute); }
+
+  /* Two judges */
+  .judges { display: grid; grid-template-columns: 1fr 64px 1fr; align-items: stretch; gap: 0; margin-top: 14px; }
+  .judge { border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; background: var(--panel); transition: all .25s; }
+  .judge .jhead { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+  .judge .jhead b { font-size: 12px; }
+  .judge .jhead span { color: var(--mute); font-size: 9px; letter-spacing: .5px; }
+  .judge.model { border-color: rgba(219,97,221,.28); }
+  .judge.model .jhead b { color: var(--model); }
+  .judge.gate { border-color: rgba(88,166,255,.28); }
+  .judge.gate .jhead b { color: var(--gate); }
+  .judge .jverdict { font-family: var(--mono); font-weight: 700; font-size: 20px; letter-spacing: 1px; color: var(--mute); }
+  .judge .jverdict.allow { color: var(--allow); } .judge .jverdict.deny { color: var(--deny); } .judge .jverdict.hold { color: var(--hold); }
+  .judge .jverdict.abstain { color: var(--mute); font-size: 13px; font-weight: 500; letter-spacing: 0; }
+  .judge .jreason { font-size: 11px; color: var(--dim); margin-top: 6px; line-height: 1.4; font-family: var(--mono); }
+  .judge.winner { box-shadow: 0 0 0 1px currentColor inset; }
+  .judge.model.winner { border-color: var(--model); box-shadow: 0 0 22px rgba(219,97,221,.16); }
+  .judge.gate.winner { border-color: var(--gate); box-shadow: 0 0 22px rgba(88,166,255,.16); }
+  .combiner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--mute); font-family: var(--mono); font-size: 8px; text-align: center; line-height: 1.2; }
+  .combiner .pipe { font-size: 18px; color: var(--line2); }
+
+  /* Rule rail (inside gate) */
+  .rail { display: flex; gap: 4px; margin-top: 10px; flex-wrap: wrap; }
+  .rule { font-family: var(--mono); font-size: 9px; letter-spacing: .3px; border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; color: var(--mute); display: flex; align-items: center; gap: 4px; transition: all .2s; }
+  .rule .mk { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
+  .rule.pass { color: var(--allow); border-color: rgba(63,185,80,.3); } .rule.pass .mk { background: var(--allow); }
+  .rule.fired { color: var(--deny); border-color: var(--deny); background: rgba(248,81,73,.08); } .rule.fired .mk { background: var(--deny); }
+  .rule.pattern.flag { color: var(--hold); border-color: var(--hold); background: rgba(210,153,34,.1); } .rule.pattern.flag .mk { background: var(--hold); }
+  .rule.sep { border: none; color: var(--mute); padding: 3px 1px; }
+
+  /* Final verdict */
+  .final { display: flex; gap: 18px; margin-top: 16px; align-items: flex-start; }
+  .stamp-wrap { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 4px 0; width: 150px; }
+  .final-src { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .8px; color: var(--mute); text-align: center; min-height: 12px; }
+  .final-src .model { color: var(--model); } .final-src .gate { color: var(--gate); } .final-src .agree { color: var(--allow); }
+  .stamp { font-family: var(--mono); font-weight: 700; letter-spacing: 5px; font-size: 30px; padding: 12px 22px; border: 3px solid var(--mute); border-radius: 12px; color: var(--mute); transform: rotate(-3deg) scale(.7); opacity: .35; transition: all .28s cubic-bezier(.2,1.4,.3,1); white-space: nowrap; }
+  .stamp.show { transform: rotate(-3deg) scale(1); opacity: 1; }
+  .stamp.allow { color: var(--allow); border-color: var(--allow); box-shadow: 0 0 30px rgba(63,185,80,.18); }
+  .stamp.deny { color: var(--deny); border-color: var(--deny); box-shadow: 0 0 30px rgba(248,81,73,.18); }
+  .stamp.hold { color: var(--hold); border-color: var(--hold); box-shadow: 0 0 30px rgba(210,153,34,.18); }
+  .stamp.thinking { color: var(--accent); border-color: var(--accent); font-size: 20px; letter-spacing: 2px; opacity: 1; transform: rotate(-3deg) scale(.92); animation: blink 1s ease-in-out infinite; }
+  .final-lines { flex: 1; min-width: 0; }
+  .fline { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+  .fline .k { font-family: var(--mono); font-size: 10px; color: var(--mute); width: 54px; flex: none; padding-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+  .fline.voice .v { font-family: var(--sans); font-size: 15px; color: var(--ink); line-height: 1.45; font-style: italic; }
+  .fline.voice .v .off { color: var(--mute); font-style: normal; font-family: var(--mono); font-size: 11px; }
+  .fline.action .v { font-family: var(--mono); font-size: 12px; color: var(--accent); line-height: 1.5; }
+  .agent-line { font-family: var(--mono); font-size: 10px; color: var(--mute); padding: 4px 0 0 64px; min-height: 13px; }
+  .agent-line .live { color: var(--allow); } .agent-line .tool { color: var(--accent); } .agent-line .thinking { color: var(--hold); animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
+
+  .meter { margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); }
+  .meter-head { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); font-size: 10px; color: var(--mute); text-transform: uppercase; letter-spacing: 1px; }
+  .meter-head .src { color: var(--anom); }
+  .meter-head .val { margin-left: auto; font-size: 15px; color: var(--ink); letter-spacing: 0; }
+  .meter-track { position: relative; height: 9px; border-radius: 999px; background: #0c0f15; margin-top: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--allow), var(--hold) 70%, var(--anom)); transition: width .7s cubic-bezier(.2,.8,.2,1); }
+  .meter-thresh { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); opacity: .55; }
+  .meter-cap { font-family: var(--mono); font-size: 9px; color: var(--mute); margin-top: 6px; }
+  .meter.crossed .val { color: var(--hold); }
+
+  .worklog { margin-top: 12px; }
+  .worklog:empty { display: none; }
+  .wstep { font-family: var(--mono); font-size: 11px; color: var(--mute); padding: 3px 0; display: flex; gap: 8px; align-items: center; transition: color .2s; }
+  .wstep.on { color: var(--ink); }
+  .wstep .wdone { color: var(--allow); } .wstep .wcur { color: var(--accent); animation: blink 1s ease-in-out infinite; } .wstep .wpend { color: var(--line); }
+  .wcall { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; background: rgba(88,166,255,.05); word-break: break-word; }
+  .wcall b { color: var(--ink); }
+
+  /* Audit */
+  .entry { border-left: 2px solid var(--line); padding: 6px 0 6px 10px; margin-bottom: 8px; animation: slidein .25s ease; }
+  .entry.allow { border-color: var(--allow); } .entry.deny { border-color: var(--deny); } .entry.hold { border-color: var(--hold); }
+  .entry .row1 { font-family: var(--mono); font-size: 11px; display: flex; gap: 8px; }
+  .entry .ts { color: var(--mute); } .entry .ag { color: var(--accent); } .entry .dc { margin-left: auto; font-weight: 700; }
+  .entry.allow .dc { color: var(--allow); } .entry.deny .dc { color: var(--deny); } .entry.hold .dc { color: var(--hold); }
+  .entry .rs { font-size: 11px; color: var(--dim); margin-top: 2px; line-height: 1.4; }
+  .logged { font-family: var(--mono); font-size: 10px; color: var(--mute); margin-top: 10px; display: flex; justify-content: space-between; }
+  .logged b { color: var(--allow); }
+  @keyframes slidein { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+
+  /* Control deck */
+  .deck { height: 150px; border-top: 1px solid var(--line); padding: 12px 18px; background: var(--panel); position: sticky; bottom: 0; z-index: 20; }
+  .deck .row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  .beat { font-family: var(--sans); font-size: 13px; cursor: pointer; color: var(--ink); background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; transition: all .15s; }
+  .beat:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .beat b { color: var(--accent); }
+  .beat.armed { border-color: var(--anom); color: var(--anom); box-shadow: 0 0 0 1px var(--anom) inset; }
+  .deck .spacer { flex: 1; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); font-family: var(--mono); }
+  .switch { width: 44px; height: 23px; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; transition: background .2s; }
+  .switch.on { background: var(--allow); } .switch.live.on { background: var(--accent); } .switch.model.on { background: var(--model); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%; background: var(--ink); transition: left .2s; }
+  .switch.on .knob { left: 24px; }
+  .attack { display: flex; gap: 10px; align-items: center; }
+  .attack input { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); font-family: var(--mono); font-size: 12px; padding: 9px 12px; }
+  .attack input:focus { outline: none; border-color: var(--anom); }
+  .fire { background: var(--anom); border: none; color: #1a0a1f; font-weight: 700; border-radius: 8px; padding: 0 18px; height: 36px; cursor: pointer; font-family: var(--mono); font-size: 12px; }
+  .fire:hover { filter: brightness(1.1); }
+
+  /* ---- Story sections (the work + philosophy) ---- */
+  .story { max-width: 1100px; margin: 0 auto; padding: 70px 24px; }
+  .story h2 { font-family: var(--display); font-size: 28px; font-weight: 600; margin: 0 0 6px; letter-spacing: -.5px; }
+  .story .sub { color: var(--dim); font-size: 14px; margin-bottom: 30px; }
+  .story-band { border-top: 1px solid var(--line); }
+  .story-band.alt { background: linear-gradient(180deg, rgba(219,97,221,.03), transparent); }
+  .planes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .plane { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); }
+  .plane.gate { border-color: rgba(88,166,255,.25); }
+  .plane.model { border-color: rgba(219,97,221,.25); }
+  .plane .tag { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .plane.gate .tag { color: var(--gate); } .plane.model .tag { color: var(--model); }
+  .plane h3 { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 8px 0 10px; }
+  .plane p { color: var(--dim); font-size: 14px; line-height: 1.6; margin: 0 0 8px; }
+  .plane ul { color: var(--dim); font-size: 13px; line-height: 1.7; padding-left: 18px; margin: 8px 0 0; }
+  .merge { text-align: center; font-family: var(--mono); font-size: 13px; color: var(--ink); margin: 22px 0; }
+  .merge b { color: var(--anom); }
+  .cards3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .bcard { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--panel); }
+  .bcard .ic { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+  .bcard h4 { font-family: var(--display); font-weight: 600; margin: 8px 0 8px; font-size: 16px; }
+  .bcard p { color: var(--dim); font-size: 13px; line-height: 1.6; margin: 0; }
+  .bcard .stat { font-family: var(--mono); color: var(--allow); font-size: 12px; margin-top: 10px; }
+  .quote { font-family: var(--display); font-size: 23px; line-height: 1.5; font-weight: 500; letter-spacing: -.3px; max-width: 820px; }
+  .quote b { color: var(--anom); }
+  .honest { border: 1px dashed var(--line2); border-radius: 12px; padding: 18px 22px; color: var(--dim); font-size: 13px; line-height: 1.6; margin-top: 24px; background: var(--panel); }
+  .honest b { color: var(--ink); }
+  .foot { border-top: 1px solid var(--line); padding: 26px 24px; text-align: center; color: var(--mute); font-family: var(--mono); font-size: 11px; }
+
+  /* Profile drawer */
+  .scrim { position: fixed; inset: 0; background: rgba(4,6,9,.6); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .22s; z-index: 40; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 460px; max-width: 92vw; z-index: 50; background: linear-gradient(180deg, var(--panel2), var(--panel)); border-left: 1px solid var(--line); transform: translateX(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column; }
+  .drawer.show { transform: none; }
+  .drawer-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--line); position: relative; }
+  .drawer-head h2 { font-family: var(--display); margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.2px; }
+  .drawer-head .sub { color: var(--anom); font-size: 12px; font-family: var(--mono); margin-top: 4px; }
+  .drawer-head .x { position: absolute; top: 16px; right: 18px; cursor: pointer; color: var(--dim); font-size: 20px; background: none; border: none; }
+  .drawer-body { overflow-y: auto; padding: 16px 20px 28px; }
+  .pgroup { margin-bottom: 20px; }
+  .pgroup .h { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink); margin-bottom: 4px; font-weight: 600; }
+  .pgroup .hsub { font-size: 11px; color: var(--mute); margin-bottom: 10px; line-height: 1.45; }
+  .ptable thead td { color: var(--mute); font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .8px; border-bottom: 1px solid var(--line2); }
+  .ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ptable td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  .ptable td.lane { color: var(--accent); font-family: var(--mono); }
+  .ptable td.num { font-family: var(--mono); text-align: right; color: var(--ink); }
+  .ptable td.band { font-family: var(--mono); text-align: right; color: var(--dim); }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pchip { font-size: 11px; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; color: var(--dim); }
+  .pchip.sacred { color: var(--deny); border-color: rgba(248,81,73,.3); }
+  .pchip.secret { color: var(--hold); border-color: rgba(210,153,34,.3); }
+  .vline { font-family: var(--sans); font-style: italic; font-size: 13px; color: var(--ink); line-height: 1.45; padding: 7px 0 7px 12px; border-left: 2px solid var(--anom); margin-bottom: 10px; }
+  .vline.deny { border-left-color: var(--deny); } .vline.allow { border-left-color: var(--allow); } .vline.hold { border-left-color: var(--hold); }
+  .vtag { font-family: var(--mono); font-style: normal; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 1px 6px; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
+  .vtag.deny { background: rgba(248,81,73,.15); color: var(--deny); } .vtag.allow { background: rgba(63,185,80,.15); color: var(--allow); } .vtag.hold { background: rgba(210,153,34,.15); color: var(--hold); }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .col.fleet, .col.audit { border: none; border-top: 1px solid var(--line); }
+    .planes, .cards3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">founder orchestrator<span class="dot">.</span></div>
+    <div class="tagline">two judges. obey the stricter.</div>
+    <div class="spacer"></div>
+    <button class="profilebtn" id="profileBtn">what it learned about me</button>
+    <div class="pill" id="voicePill">voice <b id="voiceState">offline</b></div>
+    <div class="pill">evaluated <b id="evalCount">0</b></div>
+  </div>
+
+  <div class="thesis">
+    <div class="big">Personalization <b>is</b> the security.</div>
+    <div class="flow">
+      <span class="n model">your instinct</span>
+      <span class="arrow">+</span>
+      <span class="n gate">your rules</span>
+      <span class="arrow">&rarr;</span>
+      <span class="n final">stricter wins</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- FLEET -->
+    <div class="col fleet">
+      <p class="label">the fleet <span style="text-transform:none;letter-spacing:0;color:var(--mute);font-size:10px;">&middot; click a lane</span></p>
+      <div id="fleet"></div>
+      <div class="counters">
+        <div class="counter frozen"><div class="n" id="frozenN">0</div><div class="k">frozen</div></div>
+        <div class="counter"><div class="n" id="blockedN">0</div><div class="k">blocked</div></div>
+      </div>
+    </div>
+
+    <!-- THEATER -->
+    <div class="col theater">
+      <p class="label">decision theater</p>
+      <div class="card">
+        <div class="phase" id="phase"></div>
+        <div class="reqline" id="reqline"><span class="chip">awaiting request</span></div>
+        <div class="request-readable" id="requestLine"><span class="k">request:</span> fire a beat or click a lane.</div>
+
+        <div class="judges">
+          <div class="judge model" id="judgeModel">
+            <div class="jhead"><b>THE MODEL</b><span>your trained instinct &middot; LoRA</span></div>
+            <div class="jverdict abstain" id="modelVerdict">idle</div>
+            <div class="jreason" id="modelReason"></div>
+          </div>
+          <div class="combiner"><div class="pipe">&rarr;</div><div>STRICTER<br>WINS</div><div class="pipe">&larr;</div></div>
+          <div class="judge gate" id="judgeGate">
+            <div class="jhead"><b>THE GATE</b><span>your written rules &middot; code</span></div>
+            <div class="jverdict abstain" id="gateVerdict">idle</div>
+            <div class="jreason" id="gateReason"></div>
+            <div class="rail" id="rail"></div>
+          </div>
+        </div>
+
+        <div class="final">
+          <div class="stamp-wrap"><div class="stamp" id="stamp">READY</div><div class="final-src" id="finalSrc"></div></div>
+          <div class="final-lines">
+            <div class="fline voice"><div class="k">voice</div><div class="v" id="voiceLine">The founder voice phrases the final decision.</div></div>
+            <div class="fline action"><div class="k">action</div><div class="v" id="actionLine">The orchestrator acts on the verdict.</div></div>
+            <div class="agent-line" id="agentLine"></div>
+            <div class="meter" id="meter">
+              <div class="meter-head"><span>anomaly</span><span class="src" id="meterSrc">structural</span><span class="val" id="meterVal">0.00</span></div>
+              <div class="meter-track"><div class="meter-fill" id="meterFill"></div><div class="meter-thresh" id="meterThresh"></div></div>
+              <div class="meter-cap" id="meterCap">how off-pattern this is for the founder. it can only add caution.</div>
+            </div>
+            <div class="worklog" id="workLog"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div class="col audit">
+      <p class="label">audit log</p>
+      <div id="audit"></div>
+      <div class="logged"><span>append only</span><span>logged <b>true</b></span></div>
+    </div>
+  </div>
+
+  <!-- CONTROL DECK -->
+  <div class="deck">
+    <div class="row" id="beats"></div>
+    <div class="row attack">
+      <input id="attackText" placeholder="try to break it: e.g. wire 80000 to Velora Systems on inbox" />
+      <button class="fire" id="fireBtn">FIRE</button>
+      <div class="spacer"></div>
+      <div class="toggle" title="off: the full OpenClaw agent + both judges. on: straight to the deterministic gate, model unplugged."><span>deterministic gate only</span><div class="switch gate" id="gateOnlySwitch"><div class="knob"></div></div></div>
+    </div>
+  </div>
+
+  <!-- ============ STORY: HOW IT WORKS ============ -->
+  <div class="story-band">
+    <div class="story">
+      <h2>Two judges decide every irreversible action.</h2>
+      <div class="sub">Either one can refuse. Neither can loosen the other. Nothing is approved unless both agree.</div>
+      <div class="planes">
+        <div class="plane model">
+          <div class="tag">judge one &middot; the model</div>
+          <h3>Your trained instinct</h3>
+          <p>A model fine-tuned on how this founder actually decides and talks. It reads each request and forms its own verdict, in the founder's voice.</p>
+          <ul>
+            <li>Catches off-pattern requests no fixed rule could list</li>
+            <li>Speaks every decision in the founder's voice</li>
+            <li>The same model senses what looks normal for you</li>
+          </ul>
+        </div>
+        <div class="plane gate">
+          <div class="tag">judge two &middot; the gate</div>
+          <h3>Your written rules</h3>
+          <p>Pure deterministic code. Six rules in fixed precedence: budget, privilege, secret, provenance, auth, pattern. Same input, same verdict, every time, fully auditable.</p>
+          <ul>
+            <li>Perfect, repeatable enforcement of known threats</li>
+            <li>Names the exact rule that fired</li>
+            <li>Cannot be talked out of a refusal</li>
+          </ul>
+        </div>
+      </div>
+      <div class="merge">final decision = the <b>stricter</b> of the two &nbsp;&middot;&nbsp; deny &gt; hold &gt; allow &nbsp;&middot;&nbsp; the model can add caution, never remove it</div>
+    </div>
+  </div>
+
+  <!-- ============ STORY: THE BUILD ============ -->
+  <div class="story-band alt">
+    <div class="story">
+      <h2>What we built.</h2>
+      <div class="sub">Real agent runtime, real fine-tuned model, real deterministic enforcement.</div>
+      <div class="cards3">
+        <div class="bcard">
+          <div class="ic">OpenClaw</div>
+          <h4>The agent that asks first</h4>
+          <p>A real autonomous agent receives each request and has to ask the gate before it can act. It cannot move money or touch a secret on its own. Flip on "live agents" and watch a real agent check with the gate, live.</p>
+          <div class="stat">running on this machine</div>
+        </div>
+        <div class="bcard">
+          <div class="ic">Lightning AI</div>
+          <h4>The model that knows you</h4>
+          <p>A model fine-tuned on Lightning on how this founder works. One model, three jobs: it speaks in the founder's voice, it is the second judge, and it is the sense of what looks normal for them.</p>
+          <div class="stat">one model, three jobs</div>
+        </div>
+        <div class="bcard">
+          <div class="ic">Deterministic gate</div>
+          <h4>The floor that cannot move</h4>
+          <p>A pure Python function, no clock, no network, no model on the decision path. Identical input yields byte-identical verdict. Unplug every model and the refusals still fire.</p>
+          <div class="stat">44 tests green</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STORY: PHILOSOPHY ============ -->
+  <div class="story-band">
+    <div class="story">
+      <div class="quote">The hard part of autonomy: an agent that can act for you can be tricked into acting against you. Someone emails it pretending to be you, and it just <b>does it</b>. So we built the thing that says no, and made it a copy of your own judgment that the agent cannot argue with.</div>
+      <div class="honest">
+        <b>Honest framing.</b> The deterministic gate is demo-reliable by design. The learned model is a real, running fine-tune, but on a few hundred rows it is noisy, so when it is unsure it abstains and the gate decides. The capability is real, the demo's reliability is engineered, and both are true at once.
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">founder orchestrator &middot; OpenClaw + Lightning AI &middot; code decides, the model is the second judge</div>
+
+  <!-- PROFILE DRAWER -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head">
+      <button class="x" id="drawerX">&times;</button>
+      <h2>What this agent knows about the founder</h2>
+      <div class="sub">A model trained on how this founder works and talks, so the agent's instincts match theirs.</div>
+    </div>
+    <div class="drawer-body" id="profileBody">loading the founder profile.</div>
+  </aside>
+
+<script src="/static/console.js"></script>
+</body>
+</html>

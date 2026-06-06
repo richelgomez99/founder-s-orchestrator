@@ -1,0 +1,21 @@
+
+# AI chat history export
+HISTORY/
+
+# Local secrets and env (never commit)
+.demo.env
+.env
+.env.*
+*.local.env
+.gate_trace.json
+.gstack/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS / editor
+.DS_Store
+node_modules/

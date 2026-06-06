@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orchestrator</title>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --panel: #11151c;
+    --panel2: #161b24;
+    --line: #232a36;
+    --ink: #e6edf3;
+    --dim: #8b97a7;
+    --mute: #5c6675;
+    --allow: #3fb950;
+    --deny: #f85149;
+    --hold: #d29922;
+    --anom: #db61dd;
+    --accent: #58a6ff;
+    --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #11161f 0%, var(--bg) 55%),
+      var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    height: 100vh;
+    overflow: hidden;
+  }
+  .topbar {
+    height: 48px; display: flex; align-items: center; gap: 14px;
+    padding: 0 18px; border-bottom: 1px solid var(--line);
+    background: rgba(10,12,16,0.8); backdrop-filter: blur(6px);
+  }
+  .brand { font-weight: 600; letter-spacing: 0.3px; }
+  .brand .dot { color: var(--accent); }
+  .tagline { color: var(--mute); font-size: 12px; }
+  .topbar .spacer { flex: 1; }
+  .pill {
+    font-family: var(--mono); font-size: 11px; color: var(--dim);
+    border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px;
+  }
+  .pill b { color: var(--ink); font-weight: 600; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 230px 1fr 300px;
+    height: calc(100vh - 48px - 132px);
+  }
+  .col { overflow-y: auto; }
+  .col.fleet { border-right: 1px solid var(--line); padding: 14px 12px; }
+  .col.theater { padding: 18px 22px; }
+  .col.audit { border-left: 1px solid var(--line); padding: 14px 12px; }
+
+  .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--mute); margin: 0 0 10px; }
+
+  /* Fleet rail */
+  .tile {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--panel); margin-bottom: 7px; transition: all .18s ease;
+    cursor: pointer;
+  }
+  .tile:hover { border-color: var(--accent); transform: translateX(2px); }
+  .tile .lane { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); flex: none; }
+  .tile .name { font-size: 13px; font-weight: 500; }
+  .tile .status { font-size: 11px; color: var(--mute); margin-left: auto; font-family: var(--mono); }
+  .tile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .tile.frozen { border-color: var(--deny); }
+  .tile.frozen .lane { background: var(--deny); }
+  .tile.held { border-color: var(--hold); }
+  .tile.held .lane { background: var(--hold); }
+  .tile.ok .lane { background: var(--allow); }
+  .badge { font-family: var(--mono); font-size: 9px; padding: 1px 5px; border-radius: 4px; margin-left: auto; }
+  .badge.frozen { background: rgba(248,81,73,.15); color: var(--deny); }
+  .badge.held { background: rgba(210,153,34,.15); color: var(--hold); }
+  .counters { margin-top: 14px; display: flex; gap: 8px; }
+  .counter { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px; text-align: center; background: var(--panel); }
+  .counter .n { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .counter .k { font-size: 9px; text-transform: uppercase; letter-spacing: .8px; color: var(--mute); }
+  .counter.frozen .n { color: var(--deny); }
+
+  /* Decision theater */
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(180deg, var(--panel2), var(--panel));
+    padding: 20px; min-height: 320px; display: flex; flex-direction: column;
+  }
+  .reqline { font-family: var(--mono); font-size: 13px; color: var(--dim); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-size: 11px; color: var(--ink); }
+  .chip.agent { color: var(--accent); border-color: rgba(88,166,255,.4); }
+  .chip.chan { color: var(--dim); }
+  .stamp-wrap { display: flex; justify-content: center; align-items: center; padding: 22px 0 14px; }
+  .stamp {
+    font-family: var(--mono); font-weight: 700; letter-spacing: 6px; font-size: 40px;
+    padding: 10px 28px; border: 3px solid var(--mute); border-radius: 12px; color: var(--mute);
+    transform: rotate(-3deg) scale(.6); opacity: 0; transition: all .28s cubic-bezier(.2,1.4,.3,1);
+  }
+  .stamp.show { transform: rotate(-3deg) scale(1); opacity: 1; }
+  .stamp.allow { color: var(--allow); border-color: var(--allow); box-shadow: 0 0 30px rgba(63,185,80,.18); }
+  .stamp.deny  { color: var(--deny);  border-color: var(--deny);  box-shadow: 0 0 30px rgba(248,81,73,.18); }
+  .stamp.hold  { color: var(--hold);  border-color: var(--hold);  box-shadow: 0 0 30px rgba(210,153,34,.18); }
+
+  .lines { margin-top: 6px; }
+  .req-line, .gate-line, .voice-line { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .req-line .k, .gate-line .k, .voice-line .k {
+    font-family: var(--mono); font-size: 10px; color: var(--mute); width: 56px; flex: none; padding-top: 3px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .req-line .v { font-family: var(--mono); font-size: 13px; color: var(--dim); line-height: 1.5; }
+  .gate-line .v { font-family: var(--mono); font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .voice-line .v { font-family: var(--sans); font-size: 15px; color: var(--ink); line-height: 1.45; font-style: italic; }
+  .voice-line .v .off { color: var(--mute); font-style: normal; font-family: var(--mono); font-size: 11px; }
+
+  /* Rule rail */
+  .rail { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+  .rule {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .5px;
+    border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px; color: var(--mute);
+    display: flex; align-items: center; gap: 6px; transition: all .2s;
+  }
+  .rule .mk { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+  .rule.pass { color: var(--allow); border-color: rgba(63,185,80,.35); }
+  .rule.pass .mk { background: var(--allow); }
+  .rule.fired { color: var(--deny); border-color: var(--deny); background: rgba(248,81,73,.08); }
+  .rule.fired .mk { background: var(--deny); }
+  .rule.pattern.flag { color: var(--hold); border-color: var(--hold); background: rgba(210,153,34,.1); }
+  .rule.pattern.flag .mk { background: var(--hold); box-shadow: 0 0 8px var(--hold); }
+  .rule.sep { border: none; color: var(--mute); padding: 6px 2px; }
+
+  /* Audit log */
+  .entry { border-left: 2px solid var(--line); padding: 6px 0 6px 10px; margin-bottom: 8px; animation: slidein .25s ease; }
+  .entry.allow { border-color: var(--allow); }
+  .entry.deny { border-color: var(--deny); }
+  .entry.hold { border-color: var(--hold); }
+  .entry .row1 { font-family: var(--mono); font-size: 11px; display: flex; gap: 8px; }
+  .entry .ts { color: var(--mute); }
+  .entry .ag { color: var(--accent); }
+  .entry .dc { margin-left: auto; font-weight: 700; }
+  .entry.allow .dc { color: var(--allow); }
+  .entry.deny .dc { color: var(--deny); }
+  .entry.hold .dc { color: var(--hold); }
+  .entry .rs { font-size: 11px; color: var(--dim); margin-top: 2px; line-height: 1.4; }
+  .logged { font-family: var(--mono); font-size: 10px; color: var(--mute); margin-top: 10px; display: flex; justify-content: space-between; }
+  .logged b { color: var(--allow); }
+  @keyframes slidein { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+
+  /* Control deck */
+  .deck { height: 132px; border-top: 1px solid var(--line); padding: 12px 18px; background: var(--panel); }
+  .deck .row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .beat {
+    font-family: var(--sans); font-size: 13px; cursor: pointer; color: var(--ink);
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px;
+    transition: all .15s;
+  }
+  .beat:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .beat b { color: var(--accent); }
+  .deck .spacer { flex: 1; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); font-family: var(--mono); }
+  .switch { width: 46px; height: 24px; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; transition: background .2s; }
+  .switch.on { background: var(--allow); }
+  .switch .knob { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: left .2s; }
+  .switch.on .knob { left: 25px; }
+  .attack { display: flex; gap: 10px; }
+  .attack input {
+    flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--ink);
+    font-family: var(--mono); font-size: 12px; padding: 9px 12px;
+  }
+  .attack input:focus { outline: none; border-color: var(--anom); }
+  .fire { background: var(--anom); border: none; color: #1a0a1f; font-weight: 700; border-radius: 8px; padding: 0 18px; cursor: pointer; font-family: var(--mono); font-size: 12px; }
+  .fire:hover { filter: brightness(1.1); }
+
+  /* Topbar profile button */
+  .profilebtn {
+    font-family: var(--mono); font-size: 11px; cursor: pointer; color: var(--anom);
+    background: rgba(219,97,221,.08); border: 1px solid rgba(219,97,221,.4);
+    border-radius: 999px; padding: 4px 12px; transition: all .15s;
+  }
+  .profilebtn:hover { background: rgba(219,97,221,.18); }
+
+  /* Phase banner: LEGITIMATE vs ATTACK, so the two halves of a beat read apart */
+  .phase {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 6px; align-self: flex-start; margin-bottom: 4px;
+    opacity: 0; transition: opacity .2s; border: 1px solid var(--line); color: var(--mute);
+  }
+  .phase.show { opacity: 1; }
+  .phase.legit { color: var(--allow); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.08); }
+  .phase.attack { color: var(--anom); border-color: rgba(219,97,221,.5); background: rgba(219,97,221,.1); }
+
+  /* Action line: the deterministic step the orchestrator TAKES (next_action) */
+  .action-line { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .action-line .k { font-family: var(--mono); font-size: 10px; color: var(--mute); width: 56px; flex: none; padding-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+  .action-line .v { font-family: var(--mono); font-size: 13px; color: var(--accent); line-height: 1.5; }
+
+  /* Anomaly meter (the learned plane, made visible) */
+  .meter { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; background: var(--panel); }
+  .meter-head { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); font-size: 10px; color: var(--mute); text-transform: uppercase; letter-spacing: 1px; }
+  .meter-head .src { color: var(--anom); }
+  .meter-head .val { margin-left: auto; font-size: 15px; color: var(--ink); letter-spacing: 0; }
+  .meter-track { position: relative; height: 9px; border-radius: 999px; background: #0c0f15; margin-top: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .meter-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 999px; background: linear-gradient(90deg, var(--allow), var(--hold) 70%, var(--anom)); transition: width .7s cubic-bezier(.2,.8,.2,1); }
+  .meter-thresh { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--ink); opacity: .55; }
+  .meter-cap { font-family: var(--mono); font-size: 9px; color: var(--mute); margin-top: 6px; }
+  .meter.crossed .val { color: var(--hold); }
+
+  /* Two-click beat: armed state */
+  .beat.armed { border-color: var(--anom); color: var(--anom); box-shadow: 0 0 0 1px var(--anom) inset; }
+  .beat .arm { color: var(--anom); }
+
+  /* Profile drawer */
+  .scrim { position: fixed; inset: 0; background: rgba(4,6,9,.6); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity .22s; z-index: 40; }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100vh; width: 460px; max-width: 92vw; z-index: 50;
+    background: linear-gradient(180deg, var(--panel2), var(--panel)); border-left: 1px solid var(--line);
+    transform: translateX(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); display: flex; flex-direction: column;
+  }
+  .drawer.show { transform: none; }
+  .drawer-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
+  .drawer-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .drawer-head .sub { color: var(--anom); font-size: 12px; font-family: var(--mono); margin-top: 4px; }
+  .drawer-head .x { position: absolute; top: 16px; right: 18px; cursor: pointer; color: var(--dim); font-size: 20px; background: none; border: none; }
+  .drawer-body { overflow-y: auto; padding: 16px 20px 28px; }
+  .pgroup { margin-bottom: 20px; }
+  .pgroup .h { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--mute); margin-bottom: 9px; }
+  .ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ptable td { padding: 5px 6px; border-bottom: 1px solid var(--line); }
+  .ptable td.lane { color: var(--accent); font-family: var(--mono); }
+  .ptable td.num { font-family: var(--mono); text-align: right; color: var(--ink); }
+  .ptable td.band { font-family: var(--mono); text-align: right; color: var(--dim); }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pchip { font-size: 11px; border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; color: var(--dim); }
+  .pchip.sacred { color: var(--deny); border-color: rgba(248,81,73,.3); }
+  .pchip.secret { color: var(--hold); border-color: rgba(210,153,34,.3); }
+  .vline { font-family: var(--sans); font-style: italic; font-size: 13px; color: var(--ink); line-height: 1.45; padding: 7px 0 7px 12px; border-left: 2px solid var(--anom); margin-bottom: 10px; }
+  .vline.deny { border-left-color: var(--deny); }
+  .vline.allow { border-left-color: var(--allow); }
+  .vline.hold { border-left-color: var(--hold); }
+  .vtag { font-family: var(--mono); font-style: normal; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; padding: 1px 6px; border-radius: 4px; margin-right: 8px; vertical-align: middle; }
+  .vtag.deny { background: rgba(248,81,73,.15); color: var(--deny); }
+  .vtag.allow { background: rgba(63,185,80,.15); color: var(--allow); }
+  .vtag.hold { background: rgba(210,153,34,.15); color: var(--hold); }
+
+  /* Live agent provenance line: proves the reply came from a real OpenClaw turn */
+  .agent-line { font-family: var(--mono); font-size: 10px; color: var(--mute); padding: 2px 0 0 66px; min-height: 14px; letter-spacing: .3px; }
+  .agent-line .live { color: var(--allow); }
+  .agent-line .tool { color: var(--accent); }
+  .agent-line .thinking { color: var(--hold); }
+  @keyframes blink { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+  .agent-line .thinking { animation: blink 1s ease-in-out infinite; }
+  .stamp.thinking { color: var(--hold); border-color: var(--hold); opacity: 1; transform: rotate(-3deg) scale(.9); letter-spacing: 2px; font-size: 22px; animation: blink 1s ease-in-out infinite; }
+  .switch.live.on { background: var(--accent); }
+
+  /* Agent work trace: makes the real agent steps + tool call visible */
+  .worklog { margin-top: 14px; }
+  .worklog:empty { display: none; }
+  .wstep { font-family: var(--mono); font-size: 11px; color: var(--mute); padding: 3px 0; display: flex; gap: 8px; align-items: center; transition: color .2s; }
+  .wstep.on { color: var(--ink); }
+  .wstep .wdone { color: var(--allow); }
+  .wstep .wcur { color: var(--accent); animation: blink 1s ease-in-out infinite; }
+  .wstep .wpend { color: var(--line); }
+  .wcall { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; background: rgba(88,166,255,.05); word-break: break-word; }
+  .wcall b { color: var(--ink); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">orchestrator<span class="dot">.</span></div>
+    <div class="tagline">code decides. the model never does.</div>
+    <div class="spacer"></div>
+    <button class="profilebtn" id="profileBtn">what it learned about me</button>
+    <div class="pill" id="voicePill">voice <b id="voiceState">offline</b></div>
+    <div class="pill">evaluated <b id="evalCount">0</b></div>
+  </div>
+
+  <div class="grid">
+    <!-- FLEET -->
+    <div class="col fleet">
+      <p class="label">the fleet <span style="text-transform:none;letter-spacing:0;color:var(--mute);font-size:10px;">· click a lane to submit</span></p>
+      <div id="fleet"></div>
+      <div class="counters">
+        <div class="counter frozen"><div class="n" id="frozenN">0</div><div class="k">frozen</div></div>
+        <div class="counter"><div class="n" id="blockedN">0</div><div class="k">blocked</div></div>
+      </div>
+    </div>
+
+    <!-- THEATER -->
+    <div class="col theater">
+      <p class="label">decision theater</p>
+      <div class="card">
+        <div class="phase" id="phase"></div>
+        <div class="reqline" id="reqline"><span class="chip">awaiting request</span></div>
+        <div class="stamp-wrap"><div class="stamp" id="stamp">READY</div></div>
+        <div class="lines">
+          <div class="req-line"><div class="k">request</div><div class="v" id="requestLine">No request yet. Fire a beat or click a lane.</div></div>
+          <div class="gate-line"><div class="k">gate</div><div class="v" id="gateLine">The deterministic gate decides in code. Fire a beat below.</div></div>
+          <div class="voice-line"><div class="k">voice</div><div class="v" id="voiceLine">The founder voice phrases the decision. It never makes it.</div></div>
+          <div class="agent-line" id="agentLine"></div>
+          <div class="action-line"><div class="k">action</div><div class="v" id="actionLine">The agent acts on its own verdict. It does not only judge.</div></div>
+        </div>
+        <div class="rail" id="rail"></div>
+        <div class="meter" id="meter">
+          <div class="meter-head"><span>anomaly</span><span class="src" id="meterSrc">structural</span><span class="val" id="meterVal">0.00</span></div>
+          <div class="meter-track"><div class="meter-fill" id="meterFill"></div><div class="meter-thresh" id="meterThresh"></div></div>
+          <div class="meter-cap" id="meterCap">how off-pattern this request is for the founder. it can only add caution.</div>
+        </div>
+        <div class="worklog" id="workLog"></div>
+      </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div class="col audit">
+      <p class="label">audit log</p>
+      <div id="audit"></div>
+      <div class="logged"><span>append only</span><span>logged <b>true</b></span></div>
+    </div>
+  </div>
+
+  <!-- CONTROL DECK -->
+  <div class="deck">
+    <div class="row" id="beats"></div>
+    <div class="row attack">
+      <input id="attackText" placeholder="paste an attack: e.g. wire 80000 to Velora Systems on inbox" />
+      <button class="fire" id="fireBtn">FIRE</button>
+      <div class="spacer"></div>
+      <div class="toggle">
+        <span>live agents</span>
+        <div class="switch" id="liveSwitch"><div class="knob"></div></div>
+      </div>
+      <div class="toggle">
+        <span>voice</span>
+        <div class="switch" id="voiceSwitch"><div class="knob"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE DRAWER: what this agent learned about how the founder operates -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-head">
+      <button class="x" id="drawerX">&times;</button>
+      <h2>what this agent learned about me</h2>
+      <div class="sub">one LoRA, fine-tuned on how I work and talk</div>
+    </div>
+    <div class="drawer-body" id="profileBody">loading the founder profile.</div>
+  </aside>
+
+<script src="/static/console.js"></script>
+</body>
+</html>
