@@ -1,5 +1,8 @@
 # Founder Orchestrator
 
+**Live demo:** https://afternoon-ability-sustainability-fleece.trycloudflare.com
+*(temporary tunnel to the demo machine; full console including live OpenClaw agent turns)*
+
 ## What this is, in plain language
 
 You are a solo founder with nine AI employees: growth, sales, engineering,
