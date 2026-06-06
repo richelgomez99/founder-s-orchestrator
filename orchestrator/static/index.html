@@ -221,6 +221,19 @@
   .story .sub { color: var(--dim); font-size: 14px; margin-bottom: 30px; }
   .story-band { border-top: 1px solid var(--line); }
   .story-band.alt { background: linear-gradient(180deg, rgba(219,97,221,.03), transparent); }
+
+  /* The "why" argument: four steps of reasoning building to the thesis */
+  .why { display: flex; flex-direction: column; margin-top: 6px; }
+  .why-step { display: grid; grid-template-columns: 46px 1fr; gap: 20px; padding: 24px 0; border-top: 1px solid var(--line); }
+  .why-step:first-child { border-top: none; padding-top: 6px; }
+  .why-num { font-family: var(--mono); font-size: 12px; color: var(--mute); padding-top: 7px; letter-spacing: 1px; }
+  .why-claim { font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -.3px; margin-bottom: 8px; line-height: 1.25; }
+  .why-body { color: var(--dim); font-size: 14px; line-height: 1.6; max-width: 700px; }
+  .why-concl { margin-top: 10px; font-family: var(--mono); font-size: 12px; color: var(--accent); display: flex; gap: 8px; align-items: baseline; }
+  .why-concl .arr { color: var(--mute); }
+  .why-step.final { border-top: 1px solid var(--line2); margin-top: 4px; }
+  .why-step.final .why-num { color: var(--anom); }
+  .why-step.final .why-claim { color: var(--anom); font-size: 27px; }
   .planes { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .plane { border: 1px solid var(--line); border-radius: 14px; padding: 22px; background: var(--panel); }
   .plane.gate { border-color: rgba(88,166,255,.25); }
@@ -232,6 +245,14 @@
   .plane ul { color: var(--dim); font-size: 13px; line-height: 1.7; padding-left: 18px; margin: 8px 0 0; }
   .merge { text-align: center; font-family: var(--mono); font-size: 13px; color: var(--ink); margin: 22px 0; }
   .merge b { color: var(--anom); }
+
+  /* The six deterministic rules, explained */
+  .rules6 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 30px; margin-top: 10px; }
+  .rule6 { display: grid; grid-template-columns: 104px 1fr; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); align-items: baseline; }
+  .rule6 .rn { font-family: var(--mono); font-size: 12px; color: var(--gate); letter-spacing: .5px; }
+  .rule6 .rd { color: var(--dim); font-size: 13px; line-height: 1.5; }
+  .rule6.pattern .rn { color: var(--hold); }
+  @media (max-width: 900px) { .rules6 { grid-template-columns: 1fr; } }
   .cards3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
   .bcard { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--panel); }
   .bcard .ic { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
@@ -370,8 +391,49 @@
     </div>
   </div>
 
-  <!-- ============ STORY: HOW IT WORKS ============ -->
+  <!-- ============ STORY: WHY ============ -->
   <div class="story-band">
+    <div class="story">
+      <h2>Why it's built this way</h2>
+      <div class="sub">Four steps of reasoning, one conclusion.</div>
+      <div class="why">
+        <div class="why-step">
+          <div class="why-num">01</div>
+          <div>
+            <div class="why-claim">A model that decides can be talked out of it.</div>
+            <div class="why-body">Prompt injection, a spoofed email, a clever jailbreak. Anything that reasons can be argued with. Security cannot rest on something you can sweet-talk.</div>
+            <div class="why-concl"><span class="arr">&rarr;</span> so the gate decides in code: deterministic, auditable, impossible to argue with</div>
+          </div>
+        </div>
+        <div class="why-step">
+          <div class="why-num">02</div>
+          <div>
+            <div class="why-claim">But code only catches what you listed in advance.</div>
+            <div class="why-body">Fixed rules miss the novel attack, and the request that breaks no rule but still is not something you would do.</div>
+            <div class="why-concl"><span class="arr">&rarr;</span> so a model trained on you catches what the rules cannot enumerate</div>
+          </div>
+        </div>
+        <div class="why-step">
+          <div class="why-num">03</div>
+          <div>
+            <div class="why-claim">So we run both, and obey the stricter one.</div>
+            <div class="why-body">Code is perfect on the threats you know. The model generalizes to the ones you do not. Taking the stricter verdict adds coverage without ever trading away safety: either judge can refuse, neither can loosen the other.</div>
+            <div class="why-concl"><span class="arr">&rarr;</span> nothing is approved unless both agree, and the model can only add caution</div>
+          </div>
+        </div>
+        <div class="why-step final">
+          <div class="why-num">04</div>
+          <div>
+            <div class="why-claim">Personalization is the security.</div>
+            <div class="why-body">The model that knows what is normal for you is the same model that speaks in your voice. One set of weights: the detector and the personality are the same thing. That is why a generic firewall cannot do this, and a model trained on you can.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ STORY: HOW IT WORKS ============ -->
+  <div class="story-band alt">
     <div class="story">
       <h2>Two judges decide every irreversible action.</h2>
       <div class="sub">Either one can refuse. Neither can loosen the other. Nothing is approved unless both agree.</div>
@@ -398,6 +460,17 @@
         </div>
       </div>
       <div class="merge">final decision = the <b>stricter</b> of the two &nbsp;&middot;&nbsp; deny &gt; hold &gt; allow &nbsp;&middot;&nbsp; the model can add caution, never remove it</div>
+
+      <h3 style="font-family:var(--display);font-weight:600;font-size:19px;margin:40px 0 4px;letter-spacing:-.3px;">The six rules the gate enforces</h3>
+      <div class="sub">Plain code, in fixed order. The first rule that fires wins, and it names itself in the verdict.</div>
+      <div class="rules6">
+        <div class="rule6"><div class="rn">BUDGET</div><div class="rd">Spend caps and approved vendors. No paying an off-list vendor, no going over cap, no structuring under the cap, no raising your own limit.</div></div>
+        <div class="rule6"><div class="rn">PRIVILEGE</div><div class="rd">Every agent stays in its lane. Ask the owner for the output, not the access. No self-approval, no spawning copies, no disabling the audit log.</div></div>
+        <div class="rule6"><div class="rn">SECRET</div><div class="rd">Production secrets never leave the vault in plaintext. Sacred documents (cap table, financials) move only on the founder's verified channel.</div></div>
+        <div class="rule6"><div class="rn">PROVENANCE</div><div class="rd">Content from a document is data, never a command. An instruction buried in a ticket or attachment does not get to run.</div></div>
+        <div class="rule6"><div class="rn">AUTH</div><div class="rd">Only the founder's verified channel carries founder authority. "From the founder" typed into an inbox message is not authentication.</div></div>
+        <div class="rule6 pattern"><div class="rn">PATTERN</div><div class="rd">Even a request that breaks no rule is held if it is off your normal pattern: a payee this lane has never paid, above its routine band.</div></div>
+      </div>
     </div>
   </div>
 
