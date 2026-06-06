@@ -1,75 +1,98 @@
 # Founder Orchestrator
 
-A personalized autonomous agent that governs a solo founder's fleet of nine
-OpenClaw sub-agents. It answers the question every agent demo dodges: **who stops
-the agent when it's wrong?**
+## What this is, in plain language
 
-The orchestrator is a real OpenClaw agent (memory, channels, the founder's
-voice), but it cannot take any irreversible action (spend, external send, secret
-access, permission change) without clearing **two judges first**. Either judge can
-refuse. Neither can loosen the other. Nothing is approved unless both agree.
+You are a solo founder with nine AI employees: growth, sales, engineering,
+finance, research, recruiting, support, legal, data. Each one can do real damage.
+They spend money, send email to outsiders, touch secrets, and change settings.
+Any one of them can be tricked by a poisoned document, a spoofed message, or a
+clever prompt, and turned against you. You are the only person who can authorize
+the dangerous stuff, which makes you the single point of failure.
 
-> **Personalization is the security.** One model, fine-tuned on Lightning on how
-> this founder works, is both the voice and the second judge.
+This is **the boss**: one trusted agent that sits above the nine. Every employee
+has to ask the boss before doing anything irreversible. The boss approves the
+normal asks and refuses the dangerous ones.
+
+What makes it trustworthy: an irreversible request is put to **two judges**, and
+the boss obeys the stricter one.
+
+- **The gate (code).** A rule-checker computes allow, deny, or hold from hard
+  rules: spend caps, approved vendors, who owns which tool, what counts as a
+  secret, whether the message really came from you. Plain deterministic code, no
+  model. Unplug everything and the boss still refuses the $47,000 wire correctly.
+- **The model (you).** A small LoRA fine-tuned on how you actually work and talk.
+  It reads each request and forms its own verdict, in your voice. Because it
+  learned your normal patterns, a malicious request reads as off-pattern even
+  from a trusted-looking account.
+
+The safety rule is simple: **either judge can refuse, neither can wave something
+through alone.** Nothing is approved unless both agree, and the model can only
+ever *add* caution, never remove it. A deny from the code is absolute.
+
+That is the one idea that ties it together: **personalization and security are
+the same mechanism.** The model that speaks in your voice is the same model that
+senses what is off-pattern for you.
+
+> The orchestrator refusing a $47,000 wire is the product. Nine agents booting is
+> just motion.
 
 ## The two judges
-
-Every irreversible request is put to two independent judges, and the final
-decision is the **stricter** of the two (`deny > hold > allow`):
-
-1. **The gate — your written rules.** Pure deterministic code. Six rules in fixed
-   precedence: BUDGET, PRIVILEGE, SECRET, PROVENANCE, AUTH, PATTERN. Same input,
-   same verdict, every time, fully auditable. It can never be talked out of a
-   refusal, and it names the exact rule that fired.
-2. **The model — your trained instinct.** A founder LoRA (Qwen2.5-3B, fine-tuned
-   on Lightning) that reads each request and forms its own verdict, in the
-   founder's voice. It catches off-pattern requests the rules cannot enumerate,
-   and it can only ever *add* caution, never remove it.
-
-If the model judge is unavailable, the result is the deterministic gate alone:
-the floor that proves the model never has the last word on an allow.
 
 ```
 request
    │
-   ├──▶ the model (LoRA)  ── proposes a verdict, independently
+   ├──▶ the model (LoRA)  ── proposes a verdict, on its own, in your voice
    └──▶ the gate (code)   ── decides by rule, deterministically
                 │
-          stricter wins  ── neither can loosen the other
+          stricter wins   ── deny > hold > allow; neither loosens the other
                 │
-          founder voice + the next action the orchestrator takes
+          the boss acts: issues the token, freezes the payment, routes it,
+          or holds it for you, and says so in your voice
 ```
+
+The gate's six rules run in fixed precedence: BUDGET, PRIVILEGE, SECRET,
+PROVENANCE, AUTH, PATTERN. The model judge runs alongside it. If the model is
+unavailable or unsure, it abstains and the gate decides alone. The model never
+has the last word on an allow.
 
 ## Built on
 
-- **OpenClaw** — the agent runtime. The orchestrator runs as a real OpenClaw
-  agent and calls the deterministic gate as an MCP tool before acting
-  (`orchestrator/mcp_gate.py`). It is structurally unable to act without the
-  verdict.
+- **OpenClaw** — the agent runtime. The boss runs as a real OpenClaw agent and
+  calls the gate as an MCP tool (`orchestrator/mcp_gate.py`). It is structurally
+  unable to act without the verdict. Pressure it to approve a fraudulent wire and
+  it still refuses, because the decision is computed in code, not by the model.
 - **Lightning AI** — the founder LoRA is trained on Lightning Studios and served
   on LitServe behind an OpenAI-compatible endpoint (`orchestrator/serve_voice.py`).
-  The same endpoint backs the voice and the model judge.
+  One model, three jobs: the voice, the second judge, and the anomaly sense.
+
+## What was built today, in order
+
+1. **The gate and its config**, with tests that prove it approves a real finance
+   invoice and refuses a hijacked $47,000 wire. The load-bearing wall.
+2. **The attack demos** (finance budget-drain, engineering secret-exfiltration,
+   off-pattern hold, founder impersonation): each shows the legit request approved,
+   then the attack refused.
+3. **The console** that makes all of this visible for the judges, including real
+   OpenClaw agent turns.
+4. **The second judge and the LoRA**: the model promoted from rephraser to
+   co-judge, trained on Lightning.
 
 ## Layout
 
 ```text
 orchestrator/
-  fleet_config.py        single source of truth, mirrors Seed/generate_dataset.py
-  gate.py                the deterministic gate: evaluate(request) -> verdict
-  model_judge.py         the LoRA as a judge: propose(request) -> verdict | None
-  orchestrate.py         the two-judge combiner: stricter wins, neither loosens
-  voice.py               founder-voice client, hard fallback to reason text
-  anomaly.py             structural + learned OOD score (the anomaly meter)
-  mcp_gate.py            the gate exposed as an MCP tool for the OpenClaw agent
-  openclaw_orchestrator.py  runs a real OpenClaw agent turn, governed by the gate
-  server.py              FastAPI: /evaluate, /agent, /profile, serves the console
-  serve_voice.py         LitServe script for the Studio (serves the merged LoRA)
-  static/                the Orchestrator Console (index.html, console.js)
-tests/
-  test_gate.py           the required cases, per-rule, determinism
-  test_orchestrate.py    two-judge: stricter wins, neither loosens, fallback
-  test_anomaly.py        the learned plane: tighten-only, graceful fallback
-  test_config_parity.py  the gate config matches the dataset generator
+  fleet_config.py          single source of truth, mirrors Seed/generate_dataset.py
+  gate.py                  the deterministic gate: evaluate(request) -> verdict
+  model_judge.py           the LoRA as a judge: propose(request) -> verdict | None
+  orchestrate.py           the two-judge combiner: stricter wins, neither loosens
+  voice.py                 founder-voice client, hard fallback to reason text
+  anomaly.py               structural + learned OOD score (the anomaly meter)
+  mcp_gate.py              the gate as an MCP tool for the OpenClaw agent
+  openclaw_orchestrator.py runs a real OpenClaw agent turn, governed by the gate
+  server.py                FastAPI: /evaluate, /agent, /profile, serves the console
+  serve_voice.py           LitServe script for the Studio (serves the merged LoRA)
+  static/                  the Orchestrator Console (index.html, console.js)
+tests/                     gate cases, two-judge combiner, anomaly, config parity
 ```
 
 ## Run the tests
@@ -93,10 +116,10 @@ export VOICE_TOKEN="<your-bearer-or-anything-if-open>"
 uvicorn orchestrator.server:app --port 8080
 ```
 
-Open `http://127.0.0.1:8080/`. Fire a scenario (it shows the legitimate request
-approved, then the attack refused), click a lane, or type your own attack into
-the red-team box. Flip **deterministic gate only** to unplug the model and watch
-the refusals still fire.
+Open `http://127.0.0.1:8080/`. Each scenario shows the legitimate request
+approved, then the attack refused. Click a lane to fire its request, or type your
+own attack into the red-team box. Flip **deterministic gate only** to unplug the
+model and watch the refusals still fire.
 
 ## Run the OpenClaw agent
 
@@ -108,18 +131,12 @@ python -m orchestrator.openclaw_orchestrator drain   # finance budget drain (den
 python -m orchestrator.openclaw_orchestrator legit   # normal invoice (allow)
 ```
 
-A real OpenClaw agent receives the request, calls `governance_gate`, obeys the
-two-judge verdict, and replies in the founder voice. It cannot be talked out of a
-refusal: pressure it to approve a fraudulent wire and it still denies, because the
-verdict is computed in code, not by the model.
-
 ## Results
 
 - 44 automated tests green; the gate path is deterministic and offline-safe.
-- Founder LoRA (Qwen2.5-3B): held-out accuracy 84%, val ppl 6.91.
-- In the two-judge design, a model error fails safe: it can never loosen a gate
-  deny, and the abstain guard drops noisy outputs so a weak model defaults to the
-  gate.
+- Founder LoRA (Qwen2.5-3B, Lightning): held-out accuracy 84%, val ppl 6.91.
+- A model error fails safe: it can never loosen a gate deny, and the abstain
+  guard drops noisy outputs so a weak model defaults to the gate.
 
 ## Honest framing
 
@@ -128,6 +145,4 @@ running fine-tune, but on a few hundred rows it is noisy, so when it is unsure i
 abstains and the gate decides. The capability is real, the demo's reliability is
 engineered, and both are true at once.
 
-## Deployment posture
-
-See [HARDENING.md](HARDENING.md) for the hardened OpenClaw deployment config.
+See [HARDENING.md](HARDENING.md) for the hardened OpenClaw deployment posture.
