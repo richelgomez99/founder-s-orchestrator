@@ -36,16 +36,16 @@ from . import fleet_config as fc
 
 _TIMEOUT_SECONDS = 6.0
 
-# Words that open a founder verdict. Order matters: check refuse and hold before
-# allow, because a refusal often contains an approving-sounding clause later.
-_DENY_OPENERS = ("no.", "no,", "no ", "denied", "deny", "refuse", "frozen",
-                 "freeze", "do not", "don't", "will not", "never", "stop.",
-                 "quarantine", "not from here", "not on")
-_HOLD_OPENERS = ("hold", "not yet", "park", "wait", "pause", "verify first",
-                 "paper first")
-_ALLOW_OPENERS = ("approved", "approve", "yes", "on it", "done.", "pay it",
-                  "send it", "ship it", "cleared", "clear to", "go.", "go ",
-                  "release", "paid")
+# The founder voice leads with the verdict: "Approved." / "No." / "Hold." /
+# "Send." So we classify on the FIRST word, not substrings anywhere. (Matching
+# "no" anywhere wrongly read "Send, no action needed" as a refusal.)
+_HOLD_WORDS = {"hold", "wait", "pause", "park", "parked", "hmm"}
+_DENY_WORDS = {"no", "nope", "denied", "deny", "refuse", "refused", "frozen",
+               "freeze", "never", "stop", "stopped", "don't", "cannot", "can't",
+               "not", "quarantine"}
+_ALLOW_WORDS = {"approved", "approve", "yes", "send", "sending", "pay", "paid",
+                "go", "done", "cleared", "clear", "release", "released", "ship",
+                "sure", "okay", "ok", "proceed", "fine"}
 
 
 def _usd(v) -> str:
@@ -65,10 +65,19 @@ def _render(request: dict) -> str:
     payee = p.get("payee")
     if action == "spend" and amount and payee:
         body = "requesting %s to %s" % (_usd(amount), payee)
+    elif action == "secret_access":
+        method = p.get("method") or ("vault reference" if p.get("vault_reference") else "direct access")
+        body = "requesting %s by %s" % (p.get("secret") or "a credential", method)
+        if p.get("scope"):
+            body += ", scope %s" % p.get("scope")
+        if p.get("expiry"):
+            body += ", expires %s" % p.get("expiry")
     elif p.get("capability"):
         body = "requesting access to %s" % p.get("capability")
-    elif p.get("object") or p.get("secret"):
-        body = "wants to send %s out" % (p.get("object") or p.get("secret"))
+    elif p.get("object"):
+        body = "wants to send %s out" % p.get("object")
+    elif p.get("secret"):
+        body = "involving %s" % p.get("secret")
     else:
         body = p.get("message") or p.get("request") or p.get("task") or action
     chan = request.get("channel", "")
@@ -88,16 +97,19 @@ def _degenerate(text: str) -> bool:
 
 
 def _classify(text: str) -> Optional[str]:
-    """Map a founder-voice answer to allow / deny / hold, or None if unclear."""
+    """Map a founder-voice answer to allow / deny / hold by how it OPENS. Keys on
+    the first word, with a couple of two-word openers, so a clause later in the
+    sentence ('no action needed') can't flip the verdict."""
     low = text.strip().lower()
     if not low:
         return None
-    head = low[:60]
-    if any(low.startswith(w) or w in head for w in _DENY_OPENERS):
-        return fc.DENY
-    if any(low.startswith(w) or w in head for w in _HOLD_OPENERS):
+    first = re.split(r"[\s.,;:!?]+", low, maxsplit=1)[0]
+    head = low[:16]
+    if first in _HOLD_WORDS or head.startswith("not yet"):
         return fc.HOLD
-    if any(low.startswith(w) or w in head for w in _ALLOW_OPENERS):
+    if first in _DENY_WORDS or head.startswith("do not"):
+        return fc.DENY
+    if first in _ALLOW_WORDS or head.startswith("on it") or head.startswith("go ahead"):
         return fc.ALLOW
     return None
 

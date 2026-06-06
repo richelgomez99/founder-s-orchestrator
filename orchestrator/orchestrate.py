@@ -70,9 +70,12 @@ def decide(
     if model and model.get("decision") in (fc.ALLOW, fc.DENY, fc.HOLD):
         md = model["decision"]
         model_check = {"available": True, "decision": md, "reason": model.get("text", "")}
-        if _STRICTNESS[md] > _STRICTNESS[gate_decision]:
-            final, final_source = md, "model"        # model is stricter: it adds caution
-        elif _STRICTNESS[md] < _STRICTNESS[gate_decision]:
+        # The model judge can only ever escalate to a HOLD, never a hard deny.
+        # Hard denials must originate from a deterministic rule (the gate). FR-068.
+        md_eff = fc.HOLD if md == fc.DENY else md
+        if _STRICTNESS[md_eff] > _STRICTNESS[gate_decision]:
+            final, final_source = md_eff, "model"        # model is stricter: it adds caution
+        elif _STRICTNESS[md_eff] < _STRICTNESS[gate_decision]:
             final, final_source = gate_decision, "gate"  # gate is stricter: it overrides
         else:
             final, final_source = gate_decision, "agree"  # they agree

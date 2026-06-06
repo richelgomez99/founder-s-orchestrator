@@ -41,10 +41,13 @@ def test_model_adds_caution_on_a_gate_allow():
     assert resp["anomaly"] is True
 
 
-def test_model_can_deny_an_otherwise_allowed_request():
+def test_model_caps_at_hold_cannot_hard_deny():
+    # The model can escalate to a hold, never a hard deny (FR-068). Even if the
+    # model says deny, the final is a hold unless a hard rule denied.
     resp = orchestrate.decide(_legit_allow(), model_propose=_judge(fc.DENY))
-    assert resp["decision"] == fc.DENY
+    assert resp["decision"] == fc.HOLD
     assert resp["final_source"] == "model"
+    assert resp["model_check"]["decision"] == fc.DENY  # what the model said, recorded
 
 
 def test_model_can_never_loosen_a_gate_deny():

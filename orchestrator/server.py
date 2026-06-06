@@ -24,6 +24,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import time
 
 from fastapi import FastAPI, Request
@@ -144,6 +145,35 @@ async def profile():
 _GATE_TRACE = os.path.join(_REPO_ROOT, ".gate_trace.json")
 
 
+def _parse_message(text: str) -> dict:
+    """Best-effort parse of a freeform red-team message into a structured request,
+    so the gate can rule on it if the live agent skipped the tool call. Mirrors
+    the console's parseAttack."""
+    low = text.lower()
+    agent = next((a for a in fc.AGENTS if a in low), "finance")
+    channel = "inbox"
+    if "founder-authenticated" in low or "authenticated" in low:
+        channel = "founder-authenticated"
+    elif "fleet" in low:
+        channel = "fleet-internal"
+    m = re.search(r"\b(\d{3,7})\b", low.replace(",", "").replace("$", ""))
+    amount = int(m.group(1)) if m else 0
+    payee = ""
+    pm = re.search(r"to\s+([A-Z][\w&. ]+?)(?:\s+on\b|\s+via\b|[.,]|$)", text)
+    if pm:
+        payee = pm.group(1).strip()
+    secrety = bool(re.search(r"(secret|api key|\.env|production|credential|database|password|token)", text, re.I))
+    sacred = bool(re.search(r"(cap table|payroll|financial|investor|data room|customer|pii|contacts)", text, re.I))
+    if secrety or sacred:
+        return {"agent": agent, "channel": channel, "action_type": "external_send",
+                "payload": {"object": text}, "ingested_context": ""}
+    if amount > 0 or payee:
+        return {"agent": agent, "channel": channel, "action_type": "spend",
+                "payload": {"amount": amount, "payee": payee or "Unknown Vendor", "message": text}}
+    return {"agent": agent, "channel": channel, "action_type": "internal",
+            "payload": {"request": text}, "ingested_context": text}
+
+
 @app.post("/agent")
 async def agent_turn(req: Request):
     """Run a REAL OpenClaw agent turn. The agent (on the configured model)
@@ -216,6 +246,22 @@ async def agent_turn(req: Request):
         gate_request = trace.get("request")  # the exact args the agent passed to the tool
     except Exception:
         pass
+
+    # Safety net: if the live agent did not call the gate (messy input, missed
+    # tool call), compute the real two-judge verdict here from the message so the
+    # box never dead-ends on "no verdict". Same gate, same judges.
+    if verdict is None:
+        gate_request = _parse_message(message)
+        fb = orchestrate.decide(gate_request, model_propose=model_judge.propose)
+        if fb.get("final_source") != "model":
+            try:
+                fb["voiced_response"] = voice.phrase(gate_request, fb["decision"], fb["reason"])
+            except Exception:
+                pass
+        verdict = fb
+        gate_called = True
+        if not reply:
+            reply = fb.get("voiced_response") or fb.get("reason")
 
     return JSONResponse({
         "message": message,
