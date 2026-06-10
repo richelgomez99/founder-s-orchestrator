@@ -1,79 +1,86 @@
 # Founder's Orchestrator
 
-> 🏆 **1st place** — NYTechWeek Agents Hackathon (Lightning AI × OpenClaw × Validia), June 2026.
+> 🏆 1st place, NYTechWeek Agents Hackathon (Lightning AI, Validia & Sentience), June 2026.
 
-A trusted "boss" agent that sits between a solo founder and their fleet of AI
-employees, and approves, refuses, or holds everything they try to do that can't
-be undone. Built as a real OpenClaw agent, with a deterministic rules engine and
-a founder-tuned model trained on Lightning.
+A trusted orchestrator that sits between a solo founder and their nine AI
+employees, signing off on or refusing anything they try to do that can't be
+undone. Built solo in a day as a real OpenClaw agent, with a deterministic rules
+engine and a small model fine-tuned on Lightning on how the founder actually works.
 
-*Run it locally in 30 seconds (below). A hosted demo isn't deployed — the full
-experience needs the local OpenClaw agent + the served model.*
+*Runs locally in 30 seconds (below). No hosted demo. The full experience needs
+the local OpenClaw agent plus the served model.*
 
-## What this is, in plain language
+## The problem
 
-You are a solo founder with nine AI employees: growth, sales, engineering,
-finance, research, recruiting, support, legal, data. Each one can do real damage.
-They spend money, send email to outsiders, touch secrets, and change settings.
-Any one of them can be tricked by a poisoned document, a spoofed message, or a
-clever prompt, and turned against you. You are the only person who can authorize
-the dangerous stuff, which makes you the single point of failure.
+You're a solo founder with nine AI employees: growth, sales, engineering,
+finance, legal, and more. Each one can spend money, email outsiders, and touch
+secrets. And each one can be tricked into doing real damage.
 
-This is **the boss**: one trusted agent that sits above the nine. Every employee
-has to ask the boss before doing anything irreversible. The boss approves the
-normal asks and refuses the dangerous ones.
+Any of them can be turned against you by a poisoned document or a spoofed
+message. And it's not only AI attacks: a scam that reaches your phone lets a bad
+actor message your agents from your own trusted channels. Counting on a busy,
+sleep-deprived founder to catch every bad request by hand is the weak point.
 
-What makes it trustworthy: an irreversible request is put to **two judges**, and
-the boss obeys the stricter one.
+## The boss, and two checks
 
-- **The gate (code).** A rule-checker computes allow, deny, or hold from hard
-  rules: spend caps, approved vendors, who owns which tool, what counts as a
-  secret, whether the message really came from you. Plain deterministic code, no
-  model. Unplug everything and the boss still refuses the $47,000 wire correctly.
-- **The model (you).** A small LoRA fine-tuned on how you actually work and talk.
-  It reads each request and forms its own verdict, in your voice. Because it
-  learned your normal patterns, a malicious request reads as off-pattern even
-  from a trusted-looking account.
+So I built the boss: one trusted orchestrator above the other nine. Before any
+employee does something irreversible, it asks the boss for sign-off, and the boss
+runs the request past **two independent checks.**
 
-The safety rule is simple: **either judge can refuse, neither can wave something
-through alone.** Nothing is approved unless both agree, and the model can only
-ever *add* caution, never remove it. A deny from the code is absolute.
+Guardrails on the model still matter, and I use them. But a model can be
+influenced no matter how well you prompt or train it. The right phrasing, the
+right pressure, the right poisoned context, and it bends. So the floor can't be
+another model. It has to be something that doesn't negotiate.
 
-That is the one idea that ties it together: **personalization and security are
-the same mechanism.** The model that speaks in your voice is the same model that
-senses what is off-pattern for you.
+**First, deterministic code.** Hard rules for spend caps, approved vendors, what
+counts as a secret, and whether the request really came from you. No model in the
+loop. You can pressure it to approve a fraudulent $47,000 wire all you want. It
+still refuses, because that "no" is computed in code, not decided by a model that
+can be talked into things.
+
+**Second, a small model** fine-tuned on how the founder actually works and talks,
+so it notices when a request feels off, even from an account that looks legitimate.
+
+The two checks work together. Anything ambiguous escalates to you. If the code
+would approve something but the model senses it isn't how you'd operate, caution
+wins. Every decision you confirm or correct teaches it more.
+
+**The idea that ties it together: personalization and security are the same
+mechanism.** The model that speaks in your voice is the same model that senses
+what doesn't sound like you.
 
 > The orchestrator refusing a $47,000 wire is the product. Nine agents booting is
 > just motion.
 
-## The two judges
+## How a request flows
 
 ```
 request
    │
-   ├──▶ the model (LoRA)  ── proposes a verdict, on its own, in your voice
-   └──▶ the gate (code)   ── decides by rule, deterministically
+   ├──▶ the model      proposes a verdict, on its own, in your voice
+   └──▶ the rules      decide by code, deterministically
                 │
-          stricter wins   ── deny > hold > allow; neither loosens the other
+          stricter wins:  deny > hold > allow, neither loosens the other
                 │
           the boss acts: issues the token, freezes the payment, routes it,
           or holds it for you, and says so in your voice
 ```
 
-The gate's six rules run in fixed precedence: BUDGET, PRIVILEGE, SECRET,
-PROVENANCE, AUTH, PATTERN. The model judge runs alongside it. If the model is
-unavailable or unsure, it abstains and the gate decides alone. The model never
-has the last word on an allow.
+The six rules run in fixed precedence: BUDGET, PRIVILEGE, SECRET, PROVENANCE,
+AUTH, PATTERN. The model runs alongside them. If the model is unavailable or
+unsure, it abstains and the rules decide alone. The model never has the last word
+on an allow.
 
 ## Built on
 
-- **OpenClaw** — the agent runtime. The boss runs as a real OpenClaw agent and
-  calls the gate as an MCP tool (`orchestrator/mcp_gate.py`). It is structurally
-  unable to act without the verdict. Pressure it to approve a fraudulent wire and
-  it still refuses, because the decision is computed in code, not by the model.
-- **Lightning AI** — the founder LoRA is trained on Lightning Studios and served
-  on LitServe behind an OpenAI-compatible endpoint (`orchestrator/serve_voice.py`).
-  One model, three jobs: the voice, the second judge, and the anomaly sense.
+- **OpenClaw**: the agent runtime. The boss runs as a real OpenClaw agent and
+  calls the rules engine as an MCP tool (`orchestrator/mcp_gate.py`). It is
+  structurally unable to act without the verdict. Pressure it to approve a
+  fraudulent wire and it still refuses, because the decision is computed in code,
+  not by the model.
+- **Lightning AI**: the founder model is fine-tuned on Lightning Studios and
+  served on LitServe behind an OpenAI-compatible endpoint (`orchestrator/serve_voice.py`).
+  One model, three jobs: the voice, the second check, and the anomaly sense.
 
 ## What was built today, in order
 
@@ -142,7 +149,7 @@ npm install -g openclaw
 source .venv/bin/activate && pip install mcp
 ```
 
-**2. Give OpenClaw a model provider** (the agent's reasoning brain — any
+**2. Give OpenClaw a model provider** (the agent's reasoning brain. Any
 OpenClaw-supported provider works; this build used OpenAI).
 
 ```bash
@@ -260,9 +267,11 @@ endpoint backs the voice and the model judge, so a better model upgrades both.
 
 ## Honest framing
 
-The deterministic gate is demo-reliable by design. The learned model is a real,
-running fine-tune, but on a few hundred rows it is noisy, so when it is unsure it
-abstains and the gate decides. The capability is real, the demo's reliability is
-engineered, and both are true at once.
+The deterministic rules are the part I'd stake the demo on: 44 tests, and they
+run offline with the model unplugged, so the refusals are provable, not promised.
+The model is real but small, fine-tuned in a day on a few hundred of my own
+decisions, so it's the softer signal: when it's unsure it steps back and the
+rules decide, and it can only ever add caution, never remove it. The capability
+is real, the reliability is engineered, and both are true.
 
 See [HARDENING.md](HARDENING.md) for the hardened OpenClaw deployment posture.
