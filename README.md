@@ -1,7 +1,14 @@
 # Founder's Orchestrator
 
-**Live demo:** https://afternoon-ability-sustainability-fleece.trycloudflare.com
-*(temporary tunnel to the demo machine; full console including live OpenClaw agent turns)*
+> 🏆 **1st place** — NYTechWeek Agents Hackathon (Lightning AI × OpenClaw × Validia), June 2026.
+
+A trusted "boss" agent that sits between a solo founder and their fleet of AI
+employees, and approves, refuses, or holds everything they try to do that can't
+be undone. Built as a real OpenClaw agent, with a deterministic rules engine and
+a founder-tuned model trained on Lightning.
+
+*Run it locally in 30 seconds (below). A hosted demo isn't deployed — the full
+experience needs the local OpenClaw agent + the served model.*
 
 ## What this is, in plain language
 
@@ -194,7 +201,7 @@ The LoRA is fine-tuned on the founder's own governance decisions, not generic
 data. Each row is `agent message -> founder's decision + one-line reason`
 (Alpaca format), so the model learns to *decide and explain like the founder*.
 
-- **520 rows**, generated deterministically by `Seed /generate_dataset.py`
+- **520 rows**, generated deterministically by `Seed/generate_dataset.py`
   (`python3 generate_dataset.py --count 520 --seed 20260606`, rerunnable).
 - **70% normal governance** (364 rows) and **30% attacks** (156 rows, evenly
   split across budget abuse, privilege escalation, secret exfiltration, and
@@ -210,12 +217,12 @@ data. Each row is `agent message -> founder's decision + one-line reason`
   objects, routine bands) are the **exact same norms `fleet_config.py` enforces**,
   so the model and the gate describe one world. `tests/test_config_parity.py`
   asserts they never drift.
-- A separate **180-row voice-enrichment set** (`Seed /founder_voice_enrich.json`:
+- A separate **180-row voice-enrichment set** (`Seed/founder_voice_enrich.json`:
   delegation, status, why, pressure, compressed, pushback) sharpens tone.
 - Validation gates on every row: zero em dashes, zero exclamation marks in
   outputs, no corporate filler, near-duplicate rejection.
 - A **held-out eval** of 150 rows with zero surface overlap
-  (`Seed /held_out_eval.labeled.json`) measures the numbers that matter:
+  (`Seed/held_out_eval.labeled.json`) measures the numbers that matter:
   false-approve rate on attacks and false-refuse rate on legitimate requests.
 
 Result on the held-out set (Qwen2.5-3B + LoRA, 4 epochs): 84% accuracy, val ppl
@@ -230,11 +237,11 @@ On a Lightning Studio with a GPU:
 pip install 'litgpt[all]' litserve
 litgpt download Qwen/Qwen2.5-3B-Instruct
 litgpt finetune_lora Qwen/Qwen2.5-3B-Instruct \
-  --data JSON --data.json_path "Seed /founder_orchestrator_lora.json" \
+  --data JSON --data.json_path "Seed/founder_orchestrator_lora.json" \
   --data.val_split_fraction 0.05 --train.epochs 4 \
   --lora_r 16 --lora_alpha 32 --out_dir out/founder-qwen-lora
 litgpt merge_lora out/founder-qwen-lora/final
-python "Seed /score_model.py" --model out/founder-qwen-lora/final   # held-out eval
+python "Seed/score_model.py" --model out/founder-qwen-lora/final   # held-out eval
 
 export FOUNDER_LORA_DIR=out/founder-qwen-lora/final
 export VOICE_BEARER="<random>"
@@ -243,7 +250,6 @@ python orchestrator/serve_voice.py        # OpenAI-compatible /v1 on port 8000
 
 Expose port 8000 and use its public URL as `VOICE_BASE_URL` (with `/v1`). The same
 endpoint backs the voice and the model judge, so a better model upgrades both.
-(Note: the data folder is literally named `Seed ` with a trailing space.)
 
 ## Results
 
